@@ -110,22 +110,19 @@ function drawPelvis(ctx,cx,cy,s,ang,notch,k,showAngle){const f=clamp((ang-60)/45
     ctx.beginPath();ctx.arc(ax,ay,32*s,Math.PI/2-half,Math.PI/2+half);ctx.stroke();txt(ctx,Math.round(ang)+'°',ax,ay+(32*s+16*k),{s:14*k,w:700,a:'center',c:PAL['s1']});}
   ctx.restore();}
 function drawNotch(ctx,x,y,w,h,score,k){const ink=PAL['cv-ink'];ctx.save();ctx.fillStyle=PAL['card'];ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.lineJoin='round';
-  const open=lerp(1.0,0.38,(score-1)/4),deep=lerp(0.36,0.62,(score-1)/4),nx=x+w*0.42,ny=y+h*0.28,R=h*deep;
-  ctx.beginPath();ctx.moveTo(x+w*0.05,y+h*0.95);ctx.lineTo(x+w*0.12,y+h*0.12);ctx.quadraticCurveTo(x+w*0.5,y-h*0.04,x+w*0.95,y+h*0.1);ctx.lineTo(x+w*0.98,y+h*0.55);
-  const a0=Math.PI*0.5-open,a1=Math.PI*0.5+open,cxn=nx+w*0.18,cyn=y+h*0.95;
-  ctx.lineTo(cxn+Math.cos(a0)*R*1.5,cyn-Math.sin(a0)*R*0.2);ctx.ellipse(cxn,cyn,R*1.1,R*1.25,0,-a0,-a1,true);ctx.lineTo(x+w*0.05,y+h*0.95);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
-
+  const f=(score-1)/4,hw=lerp(w*0.26,w*0.1,f),dp=lerp(h*0.42,h*0.62,f),nx=x+w*0.5,by=y+h;
+  ctx.beginPath();ctx.moveTo(x,by);ctx.lineTo(x+w*0.04,y+h*0.12);ctx.quadraticCurveTo(x+w*0.5,y-h*0.05,x+w,y+h*0.18);ctx.lineTo(x+w*0.96,by);ctx.lineTo(nx+hw,by);
+  ctx.bezierCurveTo(nx+hw*0.6,by-dp*0.9,nx-hw*0.6,by-dp*0.9,nx-hw,by);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle=PAL['s1'];ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(nx-hw,by+6);ctx.lineTo(nx+hw,by+6);ctx.stroke();ctx.setLineDash([]);
+  txt(ctx,score<=2?'wide':score>=4?'narrow':'medium',nx,by+22*k,{s:12*k,a:'center',c:PAL['s1'],w:700});ctx.restore();}
 /* ---------- long bones, symphysis face, clavicle ---------- */
 function drawLongBone(ctx,x,y,L,type,open,col){const ink=PAL['cv-ink'];ctx.save();ctx.fillStyle=col||PAL['card'];ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.lineJoin='round';
-  const t=L/450;const sh=type==='humerus'?9:type==='tibia'?10:11;
-  ctx.beginPath();
-  if(type==='femur'){ctx.moveTo(x+40*t,y-sh);ctx.lineTo(x+L-48*t,y-sh);ctx.quadraticCurveTo(x+L-20*t,y-26*t-sh,x+L,y-22*t);ctx.lineTo(x+L+2,y+22*t);ctx.quadraticCurveTo(x+L-20*t,y+28*t+sh,x+L-48*t,y+sh);ctx.lineTo(x+46*t,y+sh);ctx.lineTo(x+30*t,y+22*t);ctx.lineTo(x+14*t,y+16*t);ctx.lineTo(x+40*t,y-sh);}
-  else if(type==='tibia'){ctx.moveTo(x,y-26*t);ctx.lineTo(x+40*t,y-sh);ctx.lineTo(x+L-36*t,y-sh*0.8);ctx.lineTo(x+L,y-16*t);ctx.lineTo(x+L,y+18*t);ctx.lineTo(x+L-36*t,y+sh);ctx.lineTo(x+40*t,y+sh);ctx.lineTo(x,y+26*t);ctx.closePath();}
-  else{ctx.moveTo(x+38*t,y-sh);ctx.lineTo(x+L-36*t,y-sh);ctx.lineTo(x+L,y-20*t);ctx.lineTo(x+L,y+20*t);ctx.lineTo(x+L-36*t,y+sh);ctx.lineTo(x+38*t,y+sh);ctx.closePath();}
-  ctx.fill();ctx.stroke();
-  if(type==='femur'){ctx.beginPath();ctx.arc(x+16*t,y-14*t,20*t+6,0,TAU);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x+30*t,y-sh-2);ctx.lineTo(x+44*t,y-26*t);ctx.lineTo(x+56*t,y-sh);ctx.fill();ctx.stroke();}
-  if(type==='humerus'){ctx.beginPath();ctx.arc(x+14*t,y,20*t+6,0,TAU);ctx.fill();ctx.stroke();}
-  if(open){ctx.strokeStyle=PAL['s1'];ctx.lineWidth=2.5;ctx.setLineDash([4,3]);const gx=type==='femur'?x+30*t:x+30*t;ctx.beginPath();ctx.moveTo(gx,y-28*t-4);ctx.lineTo(gx,y+14*t);ctx.stroke();ctx.setLineDash([]);}
+  const t=L/450,P=(u,v)=>[x+u*t,y+v*t];const path=pts=>{ctx.beginPath();catmull(pts,true).forEach((q,i)=>{const [px,py]=P(q[0],q[1]);i?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.closePath();ctx.fill();ctx.stroke();};
+  if(type==='femur'){path([[100,-13],[250,-12],[400,-13],[428,-26],[447,-28],[453,-12],[453,12],[447,28],[428,26],[400,13],[250,12],[112,13],[98,22],[86,20],[66,9],[46,0],[38,-8],[44,-24],[60,-21],[74,-30],[88,-32],[98,-24]]);
+    ctx.beginPath();const [hx,hy]=P(34,-16);ctx.arc(hx,hy,22*t,0,TAU);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(...P(440,0));ctx.lineTo(...P(452,0));ctx.stroke();
+    if(open){ctx.strokeStyle=PAL['s1'];ctx.lineWidth=2.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(...P(40,-40));ctx.lineTo(...P(50,0));ctx.stroke();ctx.setLineDash([]);}}
+  else if(type==='tibia'){path([[0,-30],[18,-32],[60,-12],[250,-10],[420,-11],[446,-16],[452,-6],[452,10],[440,14],[420,11],[250,10],[60,12],[18,32],[0,30]]);}
+  else{path([[30,-18],[60,-12],[250,-10],[410,-12],[440,-24],[452,-10],[452,10],[440,24],[410,12],[250,10],[60,12],[30,18]]);ctx.beginPath();const [hx,hy]=P(22,0);ctx.arc(hx,hy,22*t,0,TAU);ctx.fill();ctx.stroke();}
   ctx.restore();}
 function drawSymphysis(ctx,cx,cy,w,h,ph,k){const ink=PAL['cv-ink'],r=rng(3+ph);ctx.save();ctx.fillStyle=PAL['card'];ctx.strokeStyle=ink;ctx.lineWidth=2;
   ctx.beginPath();ctx.ellipse(cx,cy,w/2,h/2,0,0,TAU);ctx.fill();ctx.stroke();ctx.save();ctx.beginPath();ctx.ellipse(cx,cy,w/2-2,h/2-2,0,0,TAU);ctx.clip();
@@ -159,7 +156,7 @@ function drawSkeleton(ctx,cx,top,H,fem,hl){const ink=PAL['cv-ink'],card=PAL['car
   // pelvis
   ctx.fillStyle=card;ctx.strokeStyle=ink;ctx.lineWidth=2;[-1,1].forEach(sd=>{ctx.beginPath();ctx.moveTo(...P(0.02*sd,0.5));ctx.quadraticCurveTo(...P((fem?0.12:0.105)*sd,0.475),...P((fem?0.115:0.1)*sd,0.53));ctx.quadraticCurveTo(...P(0.07*sd,0.565),...P((fem?0.03:0.02)*sd,0.575));ctx.lineTo(...P(0.006*sd,0.56));ctx.closePath();ctx.fill();ctx.stroke();});
   // legs
-  sym([[0.075,0.54],[0.06,0.775]],7);[-1,1].forEach(sd=>{ctx.beginPath();ctx.arc(...P(0.06*sd,0.783),0.012*w,0,TAU);ctx.fillStyle=card;ctx.fill();ctx.strokeStyle=ink;ctx.stroke();});
+  sym([[0.075,0.54],[0.06,0.775]],7);[-1,1].forEach(sd=>{ctx.beginPath();ctx.arc(...P(0.06*sd,0.783),0.012*w,0,TAU);ctx.fillStyle=card;ctx.fill();ctx.strokeStyle=ink;ctx.lineWidth=1.5;ctx.stroke();});
   sym([[0.058,0.795],[0.052,0.955]],6);sym([[0.075,0.8],[0.068,0.95]],3);sym([[0.045,0.965],[0.08,0.995]],4);
   if(hl){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;hl.forEach(h=>{const [x,y]=P(h[0],h[1]);ctx.beginPath();ctx.arc(x,y,h[2]*H,0,TAU);ctx.stroke();});}
   ctx.restore();}
@@ -242,8 +239,8 @@ const AN={
     a.list.concat([{l:'Combined',r:[a.lo,a.hi],comb:true}]).forEach((o,i)=>{const y=ax.Y(a.list.length+0.5-i),x0=ax.X(clamp(o.r[0],10,90)),x1=ax.X(clamp(o.r[1],10,90));if(o.comb&&!a.ok)return;
       ctx.fillStyle=o.comb?PAL['s3']:PAL['g-axis'];ctx.globalAlpha=o.comb?0.9:0.55;ctx.fillRect(x0,y-bh/2,Math.max(2,x1-x0),bh);ctx.globalAlpha=1;txt(ctx,o.l,x0+4,y-bh/2-4,{s:12,c:PAL['cv-ink']});});},
   infoPanel(sim){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap');
-    if(p.mode==='case'){const rows=REP.map(R=>{const w=reportCheck(p,R);return `<tr${R.id===p.report?' style="font-weight:700"':''}><td>MP-${R.id}</td><td>${R.sex==='F'?'woman':'man'}</td><td>${R.age}</td><td>${R.h} cm (${inch(R.h)})</td><td>${w.length?'excluded by '+w.join(', '):'consistent'}</td></tr>`;}).join('');
-      const cm=caseMatch(p);return `<h3>Missing-person reports (fictional)</h3><p>Hikers found a skeleton in a state forest (fictional), long after death. ${cm?'The profile below uses the measurements of '+CASES[cm].l+'.':'<b>You have edited the measurements</b>, so the profile uses your values. Load the case bones to reset them.'}</p><div class="tbl-wrap"><table><thead><tr><th>Report</th><th>Sex</th><th>Age</th><th>Height</th><th>Against the profile</th></tr></thead><tbody>${rows}</tbody></table></div><p class="help">A profile can exclude reports or keep them as leads. ${hon?'Identification needs individual evidence: dental records, DNA, or healed injuries and implants matched to records.':'Identification needs dental records or DNA.'}</p>`;}
+    if(p.mode==='case'){const rows=REP.map(R=>{const w=reportCheck(p,R);return `<tr${R.id===p.report?' style="font-weight:700"':''}><td style="text-align:left">MP-${R.id}</td><td style="text-align:left">${R.sex==='F'?'woman':'man'}, ${R.age}, ${R.h} cm (${inch(R.h)})</td><td style="text-align:left">${w.length?'excluded: '+w.join(', '):'consistent'}</td></tr>`;}).join('');
+      const cm=caseMatch(p);return `<h3>Missing-person reports (fictional)</h3><p>Hikers found a skeleton in a state forest (fictional), long after death. ${cm?'The profile below uses the measurements of '+CASES[cm].l+'.':'<b>You have edited the measurements</b>, so the profile uses your values. Load the case bones to reset them.'}</p><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Report</th><th style="text-align:left">Missing person</th><th style="text-align:left">Against the profile</th></tr></thead><tbody>${rows}</tbody></table></div><p class="help">A profile can exclude reports or keep them as leads. ${hon?'Identification needs individual evidence: dental records, DNA, or healed injuries and implants matched to records.':'Identification needs dental records or DNA.'}</p>`;}
     if(p.mode==='sex'){const e=sexEst(p);return `<h3>Scoring guide</h3><div class="tbl-wrap"><table><thead><tr><th>Trait</th><th>Female pattern</th><th>Male pattern</th><th>Reliability</th></tr></thead><tbody><tr><td>Subpubic angle</td><td>over 90°, U-shaped</td><td>under 70°, V-shaped</td><td>high</td></tr>${hon?'<tr><td>Greater sciatic notch</td><td>wide (score 1–2)</td><td>narrow (4–5)</td><td>high</td></tr><tr><td>Brow ridge</td><td>smooth (1–2)</td><td>strong (4–5)</td><td>moderate</td></tr><tr><td>Mastoid</td><td>small (1–2)</td><td>large (4–5)</td><td>moderate</td></tr>':''}${ap?'<tr><td>Chin</td><td>small, pointed (1–2)</td><td>broad, square (4–5)</td><td>moderate</td></tr>':''}</tbody></table></div>${hon?`<p class="help">The pelvis is about 95% accurate in adults because it is shaped for childbirth. Walker’s skull equation is about ${ap?'88':'85'}% accurate. ${ap?`logit = −1.375G − 1.185M − 1.151E + 9.128 = ${e.lg.toFixed(2)}, so P(female) = ${e.pf.toFixed(2)}.`:''} Sex cannot be read reliably from children’s skeletons.</p>`:''}`;}
     if(p.mode==='age'){const sx=sexEst(p).sex;const rows=ROMAN.map((r,i)=>`<tr${i===roundPhase(p)-1?' style="font-weight:700"':''}><td>${r}</td><td>${SB.F[i][0]}–${SB.F[i][1]}${ap?' (mean '+SBMEAN.F[i]+')':''}</td><td>${SB.M[i][0]}–${SB.M[i][1]}${ap?' (mean '+SBMEAN.M[i]+')':''}</td></tr>`).join('');
       return `<h3>Suchey–Brooks pubic symphysis phases</h3><div class="tbl-wrap"><table><thead><tr><th>Phase</th><th>Female (95% range)</th><th>Male (95% range)</th></tr></thead><tbody>${rows}</tbody></table></div><p class="help">${sx?'Using the '+(sx==='F'?'female':'male')+' ranges, because the sex estimate is '+(sx==='F'?'female':'male')+'.':'Sex is undetermined, so both ranges are combined.'} Ranges widen with age: bones change quickly while we grow, and slowly and unevenly after about 30.</p>`;}
@@ -318,16 +315,17 @@ function drawCase(sim,ctx,k){const p=sim.p,e=sexEst(p),a=ageRanges(p),t=stature(
   drawSkeleton(ctx,120,40,396,e.sex==='F',null);
   txt(ctx,cm?CASES[cm].l:'Your edited values',120,32,{s:13*k,w:700,a:'center'});
   // profile card
-  const bx=244,bw=540;card(ctx,bx,36,bw,phn?112:96);const L=[{t:'Biological profile',s:14,w:700},{t:'Sex: '+e.word+'   ·   Age: '+(a.ok?a.lo+'–'+(a.hi>=100?'90+':a.hi):'unclear')+'   ·   Stature: '+t.lo.toFixed(0)+'–'+t.hi.toFixed(0)+' cm',s:13}];
-  textBlock(ctx,L,bx+14,40,bw-28,36+(phn?110:94),k);
+  const bx=244,bw=540,R0=REP[p.report-1],w0=reportCheck(p,R0);card(ctx,bx,36,bw,phn?112:78);const L=[{t:'Biological profile',s:14,w:700},{t:'Sex: '+e.word+'   ·   Age: '+(a.ok?a.lo+'–'+(a.hi>=100?'90+':a.hi):'unclear')+'   ·   Stature: '+t.lo.toFixed(0)+'–'+t.hi.toFixed(0)+' cm',s:13}];
+  if(!phn)L.push({t:repText(R0)+': '+(w0.length?'excluded by '+w0.join(' and '):'consistent'),s:13,w:700,c:w0.length?PAL['cv-soft']:PAL['s3']});
+  textBlock(ctx,L,bx+14,40,bw-28,36+(phn?110:76),k);
   // chart: age vs stature, profile box and reports
-  const c={L:bx+48,T:phn?176:160,R:784-14,B:404};const X=v=>c.L+(v-10)/80*(c.R-c.L),Y=v=>c.B-(v-145)/50*(c.B-c.T);
+  const c={L:bx+48,T:phn?190:146,R:784-14,B:404};const X=v=>c.L+(v-10)/80*(c.R-c.L),Y=v=>c.B-(v-145)/50*(c.B-c.T);
   ctx.strokeStyle=PAL['g-grid'];ctx.lineWidth=1;for(let v=10;v<=90;v+=10){ctx.beginPath();ctx.moveTo(X(v),c.T);ctx.lineTo(X(v),c.B);ctx.stroke();}for(let v=145;v<=195;v+=10){ctx.beginPath();ctx.moveTo(c.L,Y(v));ctx.lineTo(c.R,Y(v));ctx.stroke();}
   ctx.strokeStyle=PAL['g-axis'];ctx.beginPath();ctx.moveTo(c.L,c.T);ctx.lineTo(c.L,c.B);ctx.lineTo(c.R,c.B);ctx.stroke();
   for(let v=10;v<=90;v+=phn?20:10)txt(ctx,String(v),X(v),c.B+15*k,{s:12*k,a:'center',c:PAL['cv-soft']});for(let v=145;v<=195;v+=phn?20:10)txt(ctx,String(v),c.L-6,Y(v),{s:12*k,a:'right',b:'middle',c:PAL['cv-soft']});
   txt(ctx,'age (years)',c.R,c.B+(phn?36:32)*k*0.9,{s:12*k,a:'right',c:PAL['cv-soft']});txt(ctx,'height (cm)',c.L+4,c.T-8,{s:12*k,c:PAL['cv-soft']});
   if(a.ok){const x0=X(clamp(a.lo,10,90)),x1=X(clamp(a.hi,10,90)),y0=Y(clamp(t.hi,145,195)),y1=Y(clamp(t.lo,145,195));ctx.fillStyle=PAL['s3'];ctx.globalAlpha=0.18;ctx.fillRect(x0,y0,x1-x0,y1-y0);ctx.globalAlpha=1;ctx.strokeStyle=PAL['s3'];ctx.lineWidth=2;ctx.strokeRect(x0,y0,x1-x0,y1-y0);
-    if(!phn)txt(ctx,'profile',x0+6,y0+16,{s:12*k,w:700,c:PAL['s3']});}
+    if(!phn)txt(ctx,'profile',x1-6,y1-6,{s:12*k,w:700,a:'right',c:PAL['s3']});}
   REP.forEach(R=>{const x=X(R.age),y=Y(R.h),w=reportCheck(p,R),sel=R.id===p.report,col=w.length?PAL['cv-soft']:PAL['s3'];ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
     if(R.sex==='F'){ctx.beginPath();ctx.arc(x,y,7,0,TAU);}else{ctx.beginPath();ctx.rect(x-6.5,y-6.5,13,13);}if(e.sex&&e.sex!==R.sex)ctx.stroke();else ctx.fill();
     if(sel){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,13,0,TAU);ctx.stroke();}
@@ -337,7 +335,7 @@ function drawCase(sim,ctx,k){const p=sim.p,e=sexEst(p),a=ageRanges(p),t=stature(
 
 function drawSex(sim,ctx,k){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap'),e=sexEst(p),phn=k>1.35;
   txt(ctx,'Pelvis, front view',24,30,{s:14*k,w:700});drawPelvis(ctx,210,180,1.12,p.subpubic,p.notch,k,true);
-  if(hon){txt(ctx,'Sciatic notch: '+Math.round(p.notch),24,phn?336:350,{s:13*k,w:700});drawNotch(ctx,phn?250:200,phn?332:352,150,78,Math.round(p.notch),k);}
+  if(hon){txt(ctx,'Sciatic notch: '+Math.round(p.notch),24,phn?372:362,{s:13*k,w:700});drawNotch(ctx,phn?250:220,phn?326:340,140,phn?56:62,Math.round(p.notch),k);}
   txt(ctx,'Skull, side view',430,30,{s:14*k,w:700});drawSkull(ctx,{g:hon?Math.round(p.glabella):2,m:hon?Math.round(p.mastoid):2,e:ap?Math.round(p.mental):2},560,178,1.05);
   if(hon){const X=(q)=>[560+q[0]*1.05,178+q[1]*1.05],geo=skullGeo({g:p.glabella,m:p.mastoid,e:p.mental});const mark=(q,l,dx,dy)=>{const [x,y]=X(q);ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,9,0,TAU);ctx.stroke();txt(ctx,l,x+dx,y+dy,{s:12.5*k,w:700,a:dx<0?'right':'left',b:'middle',c:PAL['rj']});};
     mark(geo.G,'brow '+Math.round(p.glabella),14,-6);mark([-2,22+geo.ml],'mastoid '+Math.round(p.mastoid),-14,10);if(ap)mark(geo.E,'chin '+Math.round(p.mental),14,4);}
@@ -345,19 +343,20 @@ function drawSex(sim,ctx,k){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap')
   if(hon)L.push({t:'Skull: P(female) = '+e.pf.toFixed(2)+(e.conflict?' (disagrees)':''),s:13});textBlock(ctx,L,444,336,326,436,k);}
 
 function drawAge(sim,ctx,k){const p=sim.p,hon=atLeast('honors'),phn=k>1.35,ph=roundPhase(p);
-  card(ctx,16,36,248,236);txt(ctx,'Growth plates',28,60,{s:14*k,w:700});
-  drawLongBone(ctx,40,phn?118:110,200,'femur',p.plates==='open');txt(ctx,'femur head',40,phn?160:150,{s:12*k,c:PAL['cv-soft']});
-  drawClavicle(ctx,52,phn?206:196,150,p.plates!=='fused');txt(ctx,'collarbone',40,phn?248:232,{s:12*k,c:PAL['cv-soft']});
-  if(!phn)txt(ctx,'red dashes: plate still open',28,262,{s:12*k,c:PAL['s1']});
-  card(ctx,276,36,248,236);txt(ctx,'Pubic symphysis: '+ROMAN[ph-1],288,60,{s:14*k,w:700});drawSymphysis(ctx,400,phn?170:160,96,phn?150:160,ph,k);
-  card(ctx,536,36,248,236);txt(ctx,hon?'Skull sutures':'Skull',548,60,{s:14*k,w:700});drawSkull(ctx,{g:2,m:2,e:2},650,phn?172:166,0.78,{sut:hon?p.sutures:null});
+  card(ctx,16,36,248,236);txt(ctx,phn?'Plates':'Growth plates',28,60,{s:14*k,w:700});
+  ctx.save();ctx.beginPath();ctx.rect(17,70,246,phn?90:86);ctx.clip();drawLongBone(ctx,44,phn?122:118,560,'femur',p.plates==='open');ctx.restore();txt(ctx,'top of the femur',40,phn?178:172,{s:12*k,c:PAL['cv-soft']});
+  drawClavicle(ctx,52,phn?208:204,150,p.plates!=='fused');txt(ctx,'collarbone (inner end)',40,phn?246:236,{s:12*k,c:PAL['cv-soft']});
+  if(!phn)txt(ctx,'red dashes: plate still open',28,260,{s:12*k,c:PAL['s1']});
+  card(ctx,276,36,248,236);txt(ctx,(phn?'Symphysis ':'Pubic symphysis: ')+ROMAN[ph-1],288,60,{s:14*k,w:700});drawSymphysis(ctx,400,phn?170:160,96,phn?150:160,ph,k);
+  card(ctx,536,36,248,236);txt(ctx,hon?(phn?'Sutures':'Skull sutures'):'Skull',548,60,{s:14*k,w:700});drawSkull(ctx,{g:2,m:2,e:2},650,phn?172:166,0.78,{sut:hon?p.sutures:null});
   // ranges chart
   const a=ageRanges(p),c={L:phn?170:200,R:770,T:300,B:420},X=v=>c.L+(clamp(v,10,90)-10)/80*(c.R-c.L);
   ctx.strokeStyle=PAL['g-grid'];ctx.lineWidth=1;for(let v=10;v<=90;v+=10){ctx.beginPath();ctx.moveTo(X(v),c.T-6);ctx.lineTo(X(v),c.B);ctx.stroke();txt(ctx,String(v),X(v),c.B+14*k,{s:12*k,a:'center',c:PAL['cv-soft']});}
   const rows=a.list.concat([{l:'Combined',r:[a.lo,a.hi],comb:true}]),rh=(c.B-c.T)/rows.length;
   rows.forEach((o,i)=>{const y=c.T+rh*(i+0.5);txt(ctx,phn?o.l.split(',')[0].replace('Pubic symphysis','Symphysis').replace('Growth plates','Plates').replace('Skull sutures','Sutures'):o.l.split(',')[0],c.L-10,y,{s:12.5*k,a:'right',b:'middle',w:o.comb?700:400});
     if(o.comb&&!a.ok){txt(ctx,'no overlap: recheck',X(12),y,{s:12.5*k,b:'middle',c:PAL['s1'],w:700});return;}
-    ctx.fillStyle=o.comb?PAL['s3']:PAL['g-axis'];ctx.globalAlpha=o.comb?0.9:0.55;ctx.fillRect(X(o.r[0]),y-rh*0.28,Math.max(3,X(o.r[1])-X(o.r[0])),rh*0.56);ctx.globalAlpha=1;});}
+    ctx.fillStyle=o.comb?PAL['s3']:PAL['g-axis'];ctx.globalAlpha=o.comb?0.9:0.55;ctx.fillRect(X(o.r[0]),y-rh*0.28,Math.max(3,X(o.r[1])-X(o.r[0])),rh*0.56);ctx.globalAlpha=1;});
+  if(!phn)txt(ctx,'age (years)',c.L-10,c.B+14*k,{s:12*k,a:'right',c:PAL['cv-soft']});}
 
 function drawStature(sim,ctx,k){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap'),phn=k>1.35,t=stature(p),bone=t.bone,L=p[bone];
   // osteometric board, 0–60 cm
@@ -366,40 +365,39 @@ function drawStature(sim,ctx,k){const p=sim.p,hon=atLeast('honors'),ap=atLeast('
   for(let c=0;c<=60;c+=phn?20:10)txt(ctx,String(c),x0+c*cm,by+66,{s:12*k,a:'center',c:PAL['cv-ink']});
   ctx.fillStyle=PAL['cv-soft'];ctx.fillRect(x0-14,by-50,14,80);const ex=x0+L*cm;ctx.fillRect(ex,by-50,14,80);
   drawLongBone(ctx,x0+2,by-12,L*cm-4,bone,false);
-  ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ex,by-56);ctx.lineTo(ex,by+48);ctx.stroke();txt(ctx,L.toFixed(1)+' cm',ex+18,by-34,{s:14*k,w:700,c:PAL['rj']});
-  txt(ctx,'Osteometric board: '+BONE[bone].l.split(' (')[0].toLowerCase()+(phn?'':', maximum length'),24,32,{s:14*k,w:700});
+  ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ex,by-56);ctx.lineTo(ex,by+48);ctx.stroke();if(phn)txt(ctx,L.toFixed(1)+' cm',ex,by-58,{s:14*k,w:700,a:'center',c:PAL['rj']});else txt(ctx,L.toFixed(1)+' cm',ex+18,by-34,{s:14*k,w:700,c:PAL['rj']});
+  txt(ctx,(phn?'Board: ':'Osteometric board: ')+BONE[bone].l.split(' (')[0].toLowerCase()+(phn?'':', maximum length'),24,30,{s:14*k,w:700});
   // formula card
   card(ctx,16,200,phn?470:500,240);const sx=t.sx,lines=[];
   if(t.both){lines.push({t:'Sex undetermined: use both formulas',s:13.5,w:700});t.both.forEach((o,i)=>lines.push({t:(i?'Male: ':'Female: ')+o.a+' × '+L.toFixed(1)+' + '+o.b+' = '+o.v.toFixed(1)+' cm',s:13}));}
   else{const c=TG[sx][bone];lines.push({t:(sx==='F'?'Female':'Male')+' '+BONE[bone].l.split(' (')[0].toLowerCase()+' formula',s:13.5,w:700});lines.push({t:'stature = '+c[0]+' × '+L.toFixed(1)+' + '+c[1],s:13});lines.push({t:'= '+t.v.toFixed(1)+' cm ('+inch(t.v)+')',s:14,w:700});}
   lines.push({t:'Range (±2 SE): '+t.lo.toFixed(1)+'–'+t.hi.toFixed(1)+' cm',s:13,c:PAL['cv-soft']});
-  if(ap&&t.se)lines.push({t:'Standard error '+t.se+' cm: about 95% of people fall within ±'+(2*t.se).toFixed(1)+' cm',s:12.5,c:PAL['cv-soft']});
+  if(ap&&t.se&&!phn)lines.push({t:'Standard error '+t.se+' cm: about 95% of people fall within ±'+(2*t.se).toFixed(1)+' cm',s:12.5,c:PAL['cv-soft']});
   if(!hon)lines.push({t:'Sex from the pelvis: '+sexEst(p).word,s:12.5,c:PAL['cv-soft']});
+  else{const o=Object.keys(BONE).filter(b=>b!==bone).map(b=>{const r=statureFor(p,b,sx);return BONE[b].l.split(' (')[0]+' '+r.v.toFixed(0)+' cm';});lines.push({t:'Check with the other bones: '+o.join(', '),s:12.5,c:PAL['cv-soft'],gap:2});}
   textBlock(ctx,lines,30,206,(phn?470:500)-28,436,k);
   // height scale
   const sx0=phn?510:540,sw=784-sx0,sy0=212,sy1=428,Y=v=>sy1-(v-140)/60*(sy1-sy0);card(ctx,sx0,200,sw,240);
   ctx.strokeStyle=PAL['g-axis'];ctx.beginPath();ctx.moveTo(sx0+70,sy0);ctx.lineTo(sx0+70,sy1);ctx.stroke();for(let v=140;v<=200;v+=10){ctx.beginPath();ctx.moveTo(sx0+64,Y(v));ctx.lineTo(sx0+70,Y(v));ctx.stroke();txt(ctx,String(v),sx0+58,Y(v),{s:12*k,a:'right',b:'middle',c:PAL['cv-soft']});}
   ctx.fillStyle=PAL['s3'];ctx.globalAlpha=0.25;ctx.fillRect(sx0+76,Y(t.hi),sw-96,Y(t.lo)-Y(t.hi));ctx.globalAlpha=1;ctx.strokeStyle=PAL['s3'];ctx.lineWidth=2;ctx.strokeRect(sx0+76,Y(t.hi),sw-96,Y(t.lo)-Y(t.hi));
-  ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(sx0+76,Y(t.v));ctx.lineTo(sx0+sw-20,Y(t.v));ctx.stroke();txt(ctx,'cm',sx0+12,sy0+2,{s:12*k,c:PAL['cv-soft']});}
+  ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(sx0+76,Y(t.v));ctx.lineTo(sx0+sw-20,Y(t.v));ctx.stroke();if(!phn)txt(ctx,'cm',sx0+12,sy0+2,{s:12*k,c:PAL['cv-soft']});}
 
-function drawFace(sim,ctx,k){const p=sim.p,ap=atLeast('ap'),n=Math.round(p.markers),phn=k>1.35,T={g:2,m:2,e:2},s=1.42,ox=150,oy=238;
+function drawFace(sim,ctx,k){const p=sim.p,ap=atLeast('ap'),n=Math.round(p.markers),phn=k>1.35,T={g:2,m:2,e:2},s=1.36,ox=178,oy=240;
   const {geo,tips}=faceTips(T,p.build);const X=q=>[ox+q[0]*s,oy+q[1]*s];
   const placed=tips.slice(0,n),mid=tips.filter(o=>!o.f.lat),allMid=mid.every(o=>tips.indexOf(o)<n);
   // face profile through the midline peg tips (plus forehead and neck), drawn behind the skull lines
   const nose=(()=>{const ans=[106,22],base=[98,12];const proj=3*(ans[0]-base[0]);return {tip:[ans[0]+proj,ans[1]-11],sub:[ans[0]+7,ans[1]+3]};})();
   const prof=(sc)=>{const t=o=>[o.b[0]+o.n[0]*o.d*sc,o.b[1]+o.n[1]*o.d*sc];const m=mid.map(t);
     return [[-60,-118],[-20,-131],[20,-130],[55,-118],[80,-100],[94,-76],m[0],m[1],m[2],m[3],[nose.tip[0]-6,nose.tip[1]-6],nose.tip,[nose.tip[0]-3,nose.tip[1]+6],nose.sub,m[4],m[5],[m[5][0]-4,47],m[6],m[7],m[8],m[9],[70,104],[48,112],[36,150]];};
-  if(allMid){ctx.save();if(ap&&p.spread){[1.25,0.75].forEach((sc,i)=>{const pts=catmull(prof(sc),false);ctx.beginPath();pts.forEach((q,j)=>{const [x,y]=X(q);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=PAL['s4'];ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);});}
-    const pts=catmull(prof(1),false);ctx.beginPath();pts.forEach((q,j)=>{const [x,y]=X(q);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-    [[-20,150],[-75,120],[-104,40],[-104,-40],[-90,-95]].forEach(q=>ctx.lineTo(...X(q)));ctx.closePath();ctx.fillStyle='rgba(176,148,118,.45)';ctx.fill();
-    ctx.beginPath();pts.forEach((q,j)=>{const [x,y]=X(q);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=2.5;ctx.stroke();ctx.restore();}
   drawSkull(ctx,T,ox,oy,s);
-  if(allMid){// stylized eye, ear and cheek line
-    ctx.save();ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=2;const [ex,ey]=X([88,-12]);ctx.beginPath();ctx.moveTo(ex-12,ey);ctx.quadraticCurveTo(ex,ey-7,ex+12,ey+1);ctx.quadraticCurveTo(ex,ey+5,ex-12,ey);ctx.stroke();
-    const [ax,ay]=X([2,4]);ctx.beginPath();ctx.ellipse(ax,ay,13,24,0.15,0,TAU);ctx.stroke();
-    if(n>=NFACE){const lat=tips.filter(o=>o.f.lat);ctx.setLineDash([6,4]);ctx.lineWidth=1.8;ctx.beginPath();[lat[1],lat[2],lat[4],lat[5],lat[6]].forEach((o,i)=>{const [x,y]=X(o.t);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.setLineDash([]);}ctx.restore();}
+  if(allMid){ctx.save();const pts=catmull(prof(1),false);ctx.beginPath();catmull(prof(1).concat([[-20,150],[-62,116],[-86,62],[-102,10],[-104,-40],[-90,-92],[-76,-110]]),false).forEach((q,j)=>{const [x,y]=X(q);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.closePath();ctx.fillStyle='rgba(176,148,118,.55)';ctx.fill();
+    if(ap&&p.spread){[1.25,0.75].forEach(sc=>{const q2=catmull(prof(sc),false);ctx.beginPath();q2.forEach((q,j)=>{const [x,y]=X(q);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=PAL['s4'];ctx.lineWidth=1.8;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);});}
+    ctx.beginPath();pts.forEach((q,j)=>{const [x,y]=X(q);j?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=2.5;ctx.stroke();
+    ctx.lineWidth=2;const [ex,ey]=X([88,-12]);ctx.beginPath();ctx.moveTo(ex-12,ey);ctx.quadraticCurveTo(ex,ey-7,ex+12,ey+1);ctx.quadraticCurveTo(ex,ey+5,ex-12,ey);ctx.stroke();
+    const [ax,ay]=X([2,4]);ctx.beginPath();ctx.ellipse(ax,ay,13,24,0.15,0,TAU);ctx.stroke();ctx.restore();}
   // pegs
-  placed.forEach((o,i)=>{const [bx,by]=X(o.b),[tx,ty]=X(o.t);ctx.strokeStyle=PAL['s1'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(tx,ty);ctx.stroke();ctx.fillStyle=PAL['s1'];ctx.beginPath();ctx.arc(tx,ty,3.5,0,TAU);ctx.fill();});
+  placed.forEach((o,i)=>{const [bx,by]=X(o.b),[tx,ty]=X(o.t);ctx.fillStyle=PAL['s1'];ctx.strokeStyle=PAL['s1'];if(o.f.lat){ctx.beginPath();ctx.arc(bx,by,4,0,TAU);ctx.fill();ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(bx,by,7.5,0,TAU);ctx.stroke();return;}ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(tx,ty);ctx.stroke();ctx.beginPath();ctx.arc(tx,ty,3.5,0,TAU);ctx.fill();});
   if(n<NFACE){const o=tips[n],[bx,by]=X(o.b);ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(bx,by,9,0,TAU);ctx.stroke();ctx.setLineDash([]);}
   // side card
   const cx0=phn?440:470;card(ctx,cx0,36,784-cx0,404);const L=[{t:'Tissue-depth markers',s:14,w:700},{t:n+' of '+NFACE+' placed · '+p.build+' build',s:13,c:PAL['cv-soft']}];
@@ -407,7 +405,9 @@ function drawFace(sim,ctx,k){const p=sim.p,ap=atLeast('ap'),n=Math.round(p.marke
   if(n>0){const o=tips[n-1];L.push({t:'Last placed: '+o.f.n+', '+o.d.toFixed(1)+' mm',s:13});}
   L.push({t:allMid?'Profile built from the '+mid.length+' midline pegs. Nose tip set by Krogman’s rule: about 3 × the nasal spine length.':'The face outline appears when all '+mid.length+' midline pegs are placed.',s:12.5,c:PAL['cv-soft']});
   if(ap&&p.spread)L.push({t:'Dashed: tissue 25% thinner and 25% thicker. Real faces fall anywhere in that band.',s:12.5,c:PAL['s4']});
-  textBlock(ctx,L,cx0+14,42,784-cx0-28,432,k);}
+  const ly=textBlock(ctx,L,cx0+14,42,784-cx0-28,432,k);
+  if(!phn){const rh=Math.min(15,(428-ly-8)/NFACE),bx=cx0+180,bw=784-bx-40;if(rh>=13){tips.forEach((o,i)=>{const y=ly+8+i*rh+rh/2,on=i<n;txt(ctx,o.f.n.replace(' (mental eminence)','').replace(' (supraorbital)','').replace(' (gonion)',''),bx-8,y,{s:12,a:'right',b:'middle',c:on?PAL['cv-ink']:PAL['cv-soft']});
+    ctx.fillStyle=on?PAL['s1']:PAL['line'];ctx.fillRect(bx,y-rh*0.3,o.d/25*bw,rh*0.6);if(on)txt(ctx,o.d.toFixed(1),bx+o.d/25*bw+4,y,{s:12,b:'middle',c:PAL['cv-soft']});});}}}
 
 AN.onLevel=sim=>{syncMode(sim);sim.infoDirty=true;};
 const C0=AN.controls;
