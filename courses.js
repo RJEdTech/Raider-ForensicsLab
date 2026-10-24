@@ -25,7 +25,7 @@ BioLab.COURSES = [
       { n: 'Case', t: 'Digital case file: put it all together', ids: ['casefile'] }
     ],
     further: ['binary', 'internet', 'pubkey', 'firewall', 'risk'],
-    furtherLinks: [{ href: 'https://rjedtech.github.io/Raider-ChemLab/#path-forensic', title: 'More chemistry in Raider ChemLab', label: 'Raider ChemLab',
+    furtherLinks: [{ href: 'https://rjedtech.github.io/Raider-ChemLab/#home', title: 'More chemistry in Raider ChemLab', label: 'Raider ChemLab',
       text: 'The chemistry behind the evidence: reactions, solutions, acids and bases, spectroscopy and more.', kind: 'Chemistry' },
       { href: 'https://rjedtech.github.io/Raider-BioLab/#home', title: 'More biology in Raider BioLab', label: 'Raider BioLab',
       text: 'DNA, gel electrophoresis, genetics and the human body.', kind: 'Biology' }] },
