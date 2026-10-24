@@ -1,21 +1,21 @@
-# Raider CyberLab: simulation authoring guide
+# Raider ForensicsLab: simulation authoring guide
 
-CyberLab shares the Raider BioLab engine (the global is still called `BioLab`). Chemistry data and helpers live in `chemdata.js` (global `ChemLab`, documented below). Sections are set in `courses.js` with `BioLab.setSections`:
+ForensicsLab shares the Raider BioLab engine (the global is still called `BioLab`). Chemistry data and helpers live in `chemdata.js` (global `ChemLab`, documented below). Sections are set in `courses.js` with `BioLab.setSections`:
 
 | apUnit | Section |
 |---|---|
-| 0 | Data as bits |
-| 1 | How the internet works |
-| 2 | Protecting systems |
-| 3 | Cryptography |
-| 4 | Detecting attacks |
-| 5 | Protecting yourself |
+| 6 | Crime scene and evidence |
+| 16 | Forensic chemistry |
+| 8 | Trace and impression evidence |
+| 9 | Death and forensic anthropology |
+| 7 | Biological evidence |
 | 18 | Digital forensics |
+| 20 | Cybercrime and security |
 | 19 | Go further |
 
 Ignore the biology section numbers in the table below. The level names in code stay `bio` / `honors` / `ap`; on screen they read Big picture / Closer look / Deep dive, and there are no course levels here; they mean: what and why / the real terms / the bytes and math.
 
-Test with: `LAB_ROOT=file:///home/claude/work/Raider-CyberLab/index.html LAB_OUT=/home/claude/work/labtest/out node /home/claude/work/labtest/harness.js <hash>`
+Test with: `LAB_ROOT=file:///home/claude/work/Raider-ForensicsLab/index.html LAB_OUT=/home/claude/work/labtest/out node /home/claude/work/labtest/harness.js <hash>`
 
 Each simulation is one file, `sims/<hash>.js`, that registers a definition object:
 
@@ -91,7 +91,7 @@ BioLab.register(SIM);
 - **Phone width (400 px):** the stage scales down, so keep labels few and large.
 
 ## Testing
-`LAB_ROOT=file:///home/claude/work/Raider-CyberLab/index.html LAB_OUT=/home/claude/work/labtest/out node /home/claude/work/labtest/harness.js <hash> [...]` prints a JSON report. It covers errors, NaN readouts, sweeps of every control and action, every challenge answered correctly at every level (each verdict must be "Your prediction held up." or "Correct."), and the walkthrough steps. Screenshots go to `/home/claude/work/labtest/out/<hash>/`. Look at the screenshots: `desk-ap.png`, `desk-dark.png`, `phone-dark.png`, `tour-step2.png`.
+`LAB_ROOT=file:///home/claude/work/Raider-ForensicsLab/index.html LAB_OUT=/home/claude/work/labtest/out node /home/claude/work/labtest/harness.js <hash> [...]` prints a JSON report. It covers errors, NaN readouts, sweeps of every control and action, every challenge answered correctly at every level (each verdict must be "Your prediction held up." or "Correct."), and the walkthrough steps. Screenshots go to `/home/claude/work/labtest/out/<hash>/`. Look at the screenshots: `desk-ap.png`, `desk-dark.png`, `phone-dark.png`, `tour-step2.png`.
 
 ## Course pathways
 `courses.js` lists each RJ course's units in teaching order with tool ids (owned by the lead; builders don't edit it). The course sequences come from Canvas; see the build notes.

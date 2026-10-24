@@ -304,7 +304,8 @@ BL.gotoChallenge=function(sim,i){sim.ch={idx:i,phase:'ask',pick:null,changed:fal
 /* ---------- router, landing page, loop ---------- */
 let homeEl,simsEl,jumpEl,backEl;
 function ensureBuilt(id){const sim=sims[id];if(sim.ui.sec)return sim;simsEl.appendChild(buildSim(sim));resetSim(sim);applyLevel(sim);return sim;}
-function show(hash){const def=DEFS.find(d=>d.hash===hash);
+function show(hash){if(hash&&hash.indexOf('path-')===0){const id=hash.slice(5);if((BL.COURSES||[]).some(c=>c.id===id)||id==='topic'){browse=id;store.set(LAB_KEY+'-browse',browse);buildHome();}hash='';}
+  const def=DEFS.find(d=>d.hash===hash);
   if(!def){active=null;homeEl.hidden=false;backEl.hidden=true;jumpEl.value='';DEFS.forEach(d=>{if(sims[d.id].ui.sec)sims[d.id].ui.sec.hidden=true;});document.title=LAB_NAME;drawThumbs();return;}
   const sim=ensureBuilt(def.id);active=sim;homeEl.hidden=true;backEl.hidden=false;jumpEl.value=def.hash;renderRelated(sim);
   DEFS.forEach(d=>{if(sims[d.id].ui.sec)sims[d.id].ui.sec.hidden=d.id!==def.id;});document.title=def.tab+' · '+LAB_NAME;
@@ -334,6 +335,8 @@ const thumbCanvas=document.createElement('canvas');
 let browse=store.get(LAB_KEY+'-browse')||'topic';
 function sortSec(list,u){const ord=(BL.TOPIC_ORDER||{})[u]||[];const ix=d=>{const i=ord.indexOf(d.id);return i<0?1000+(d.order||0):i;};return list.slice().sort((a,b)=>ix(a)-ix(b));}
 function card(d){return `<a class="card${d.apUnit===FURTHER?' adv':''}" href="#${d.hash}"><canvas class="thumb" data-sim="${d.id}" aria-hidden="true"></canvas><span class="card-b"><span class="card-t">${d.tab}</span><span class="card-d">${d.card||''}</span>${d.kind?`<span class="kind">${d.kind}</span>`:''}</span></a>`;}
+/* A card that links to another site (e.g. a sister lab): {href,title,text,kind,label} */
+function extCard(x){return `<a class="card adv ext" href="${x.href}"><span class="thumb ext-thumb" aria-hidden="true"><span>${x.label||x.title}</span></span><span class="card-b"><span class="card-t">${x.title} ↗</span><span class="card-d">${x.text||''}</span>${x.kind?`<span class="kind">${x.kind}</span>`:''}</span></a>`;}
 function buildHome(){const units=document.getElementById('units');units.innerHTML='';const courses=BL.COURSES||[];
   const bw=document.getElementById('browse');
   if(bw){bw.innerHTML=['<button type="button" data-b="topic">By topic</button>'].concat(courses.map(c=>`<button type="button" data-b="${c.id}">${c.name}</button>`)).join('');
@@ -342,7 +345,7 @@ function buildHome(){const units=document.getElementById('units');units.innerHTM
   if(course){const intro=el('p',{class:'lede course-lede'},course.blurb||'');units.appendChild(intro);
     course.units.forEach((u,i)=>{const list=linkList(u.ids);if(!list.length)return;const sec=el('section',{class:'unit'});
       sec.innerHTML=`<h3 class="unit-h"><span class="unit-n">${u.n||('Step '+(i+1))}</span> ${u.t}</h3>${u.note?`<p class="unit-note">${u.note}</p>`:''}<div class="cards">${list.map(card).join('')}</div>`;units.appendChild(sec);});
-    const adv=linkList(course.further);if(adv.length){const sec=el('section',{class:'unit further'});sec.innerHTML=`<h3 class="unit-h"><span class="unit-n">Go further</span> For students who want more</h3><p class="unit-note">Optional tools that go past what class time allows.</p><div class="cards">${adv.map(card).join('')}</div>`;units.appendChild(sec);}}
+    const adv=linkList(course.further),ext=course.furtherLinks||[];if(adv.length||ext.length){const sec=el('section',{class:'unit further'});sec.innerHTML=`<h3 class="unit-h"><span class="unit-n">Go further</span> For students who want more</h3><p class="unit-note">Optional tools that go past what class time allows.</p><div class="cards">${adv.map(card).join('')}${ext.map(extCard).join('')}</div>`;units.appendChild(sec);}}
   else{const groups={};DEFS.forEach(d=>{(groups[d.apUnit]=groups[d.apUnit]||[]).push(d);});
     SECTIONS.forEach(u=>{const list=sortSec(groups[u]||[],u);if(!list.length)return;
       const sec=el('section',{class:'unit'+(u===FURTHER?' further':'')});sec.innerHTML=`<h3 class="unit-h"><span class="unit-n">${UNITS[u]&&UNIT_PREFIX?UNIT_PREFIX+' '+u:''}</span> ${secName(u)}</h3>${u===FURTHER?'<p class="unit-note">Optional, advanced tools for students who want to go past what class time allows.</p>':''}<div class="cards">${list.map(card).join('')}</div>`;units.appendChild(sec);});}

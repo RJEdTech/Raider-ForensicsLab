@@ -1,7 +1,7 @@
-# Raider CyberLab
+# Raider ForensicsLab
 
-Interactive digital forensics and cybersecurity investigations for Regis Jesuit students: the digital unit of Forensic Science, plus exploration tools for any class. It is a companion to [Raider ChemLab](https://rjedtech.github.io/Raider-ChemLab/), [Raider BioLab](https://rjedtech.github.io/Raider-BioLab/) and [Raider PhysLab](https://rjedtech.github.io/Raider-PhysLab/) and runs on the same engine.
+Interactive investigations for Regis Jesuit Forensic Science: crime scenes, fingerprints, toxicology, blood spatter, DNA, forensic anthropology, digital forensics and cybercrime, plus cybersecurity exploration tools for any class. It is a companion to [Raider ChemLab](https://rjedtech.github.io/Raider-ChemLab/), [Raider BioLab](https://rjedtech.github.io/Raider-BioLab/) and [Raider PhysLab](https://rjedtech.github.io/Raider-PhysLab/) and runs on the same engine.
 
-**Live site:** https://rjedtech.github.io/Raider-CyberLab/
+**Live site:** https://rjedtech.github.io/Raider-ForensicsLab/
 
-Every tool is defensive and fictional: it shows how investigators find and verify evidence and how people protect themselves, using invented people, organizations and data. Everything runs in the browser, with no logins and no data collection.
+Every tool is clinical, defensive and fictional: diagrams and data instead of graphic images, investigations instead of attacks, and invented people, places and organizations. Everything runs in the browser, with no logins and no data collection.
