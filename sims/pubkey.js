@@ -59,7 +59,7 @@ function runCase(setup,sim){const st=sim?sim.st:null,P=DHP.b61,R=rng(7+setup);co
   if(setup===0){wire.push({l:'text',c:'#c27a00',d:'“'+MSG+'”'});note.push('Message: “'+MSG+'”');truth.text=true;truth.change=true;}
   else if(setup===1){const key=hexOf(keystream('ava-key-'+setup,8));const c=encrypt(key,MSG);wire.push({l:'key',c:'#b3261e',d:'key '+key});wire.push({l:'locked',c:'#3f5f7f',d:'locked '+hexOf(c).slice(0,24)+'…'});
     note.push('Key: '+key);note.push('Locked: '+hexOf(c).slice(0,32)+'…');const e=decrypt(key,c);note.push('Eve unlocks it with the key: “'+e+'”');truth.text=e===MSG;truth.key=true;truth.change=true;}
-  else if(setup===2){const a=rnd(),b=rnd(),A=mpow(P.g,a,P.p),B=mpow(P.g,b,P.p),s=mpow(B,a,P.p),c=encrypt(s,MSG);wire.push({l:'A',c:'#0f8b8d',d:'A = '+A});wire.push({l:'B',c:'#0f8b8d',d:'B = '+B});wire.push({l:'locked',c:'#3f5f7f',d:'locked '+hexOf(c).slice(0,24)+'…'});
+  else if(setup===2){const a=rnd(),b=rnd(),A=mpow(P.g,a,P.p),B=mpow(P.g,b,P.p),s=mpow(B,a,P.p),c=encrypt(s,MSG);wire.push({l:'A',c:'#0f8b8d',d:'A = '+A});wire.push({l:'B',c:'#0f8b8d',d:'B = '+B,back:true});wire.push({l:'locked',c:'#3f5f7f',d:'locked '+hexOf(c).slice(0,24)+'…'});
     note.push('Public: p = 2⁶¹ − 1, g = 37, A = '+short(A,12)+', B = '+short(B,12));note.push('Locked: '+hexOf(c).slice(0,32)+'…');
     const bf=bruteSync(P,A,30000);const guess=decrypt(mpow(A*B,1n,P.p),c);note.push('Tried '+bf.tries.toLocaleString('en-US')+' guesses for a: not found. Needs about '+sciN(Number(P.p)/2)+'.');
     note.push('Guessing the key from A × B gives junk, not words.');truth.text=readable(guess)&&guess===MSG;}
@@ -70,7 +70,7 @@ function runCase(setup,sim){const st=sim?sim.st:null,P=DHP.b61,R=rng(7+setup);co
     truth.text=read===MSG;truth.key=kEveA===kAva;truth.change=benGot!==MSG&&decrypt(kBen,c2)===benGot;}
   else{const a=rnd(),b=rnd(),e1=rnd(),A=mpow(P.g,a,P.p),B=mpow(P.g,b,P.p),E=mpow(P.g,e1,P.p);const sigB=sign(String(B),KAVA_SITE()),okReal=verify(String(B),sigB,KAVA_SITE());
     const okFake=verify(String(E),sigB,KAVA_SITE())||verify(String(E),sign(String(E),KEVE),KAVA_SITE());const s=mpow(B,a,P.p),c=encrypt(s,MSG);
-    wire.push({l:'cert',c:'#7b3fe4',d:'Ben’s certificate + signed B'});wire.push({l:'A',c:'#0f8b8d',d:'A = '+A});wire.push({l:'locked',c:'#3f5f7f',d:'locked '+hexOf(c).slice(0,24)+'…'});
+    wire.push({l:'cert',c:'#7b3fe4',d:'Ben’s certificate + signed B',back:true});wire.push({l:'A',c:'#0f8b8d',d:'A = '+A});wire.push({l:'locked',c:'#3f5f7f',d:'locked '+hexOf(c).slice(0,24)+'…'});
     note.push('Tried swapping B for her own E: signature check '+(okFake?'passed':'FAILED')+', so Ava would stop');note.push('So Eve forwards it untouched. Locked: '+hexOf(c).slice(0,28)+'…');note.push('Still visible: Ava’s IP talks to Ben’s server, when, how many bytes');
     truth.text=false;truth.change=okFake;stopped=!okReal;}
   const L=ENC.encode(MSG).length,bytes=[L,8+L,16+L,16+L,96+16+L][setup];

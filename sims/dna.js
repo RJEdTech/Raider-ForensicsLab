@@ -99,6 +99,7 @@ function paternityIndex(sim,man){const c=getCase(sim),kid=c.lanes.find(l=>l.ev).
     m.forEach(ma=>{f.forEach(fa=>{if(same([ma,fa].sort((a,b)=>a-b),k))X+=0.25;});if(k.includes(ma)){const other=k[0]===ma?k[1]:k[0];Y+=0.5*(L.freq[other]||0.01);}});
     cpi*=Y>0?X/Y:1;});return cpi;}
 function verdictFor(sim,l){const v=compare(sim).res[l.id];if(!v)return '';if(!compare(sim).used)return 'not typed yet';
+  if(getCase(sim).type==='paternity'&&l.id!=='mo'&&v.mis===1)return '1 mismatch: type more loci';
   if(v.mis)return getCase(sim).type==='paternity'?(l.id==='mo'?'check sample':'Excluded'):'Excluded';return getCase(sim).type==='paternity'?(l.id==='mo'?'Consistent':'Not excluded'):'Cannot be excluded';}
 const oneIn=p=>p>0?'1 in '+(1/p>=1e4?sci(1/p,2):Math.round(1/p).toLocaleString('en-US')):'—';
 
@@ -185,11 +186,11 @@ const DNA={
       return `<tr><td>${L.id}</td><td><b>${evTxt}</b></td>${cells}</tr>`;}).join('');
     const vrow=`<tr><td><b>Conclusion</b></td><td></td>${refs.map(l=>`<td><b>${verdictFor(sim,l)}</b></td>`).join('')}</tr>`;
     let h=`<h3>${CASES[c.type].name}</h3><p class="help">${STORY[c.type]}</p><div class="tbl-wrap"><table><thead>${head}</thead><tbody>${rows}${vrow}</tbody></table></div>`;
-    if(c.type==='paternity')h+=`<p class="help">The child got one allele from each parent. The allele not from the mother must come from the father: a man without it at ${hon?'two or more loci':'a locus'} is excluded.${ap?' A single mismatch can be a mutation, so labs require two or more.':''}</p>`;
+    if(c.type==='paternity')h+=`<p class="help">The child got one allele from each parent. The allele not from the mother must come from the father: a man without it at two or more loci is excluded.${ap?' A single mismatch can be a mutation, so labs require two or more.':''}</p>`;
     else if(c.type==='mixture')h+=`<p class="help">Up to four alleles per locus from two people. A person is included if every one of their alleles appears in the mixture.</p>`;
     else h+=`<p class="help">${hon?'“Cannot be excluded” means every typed locus matches. ':''}One clear mismatch at any locus excludes a person.${ap&&c.type==='degraded'?' Loci with no result or a possible dropout are left out of the comparison.':''}</p>`;
     if(ap&&cmp.used&&c.type!=='paternity')h+=`<p class="help">${c.type==='mixture'?'Combined probability of inclusion':'Random match probability'} over ${cmp.used} usable loci: ${oneIn(cmp.stat)}.</p>`;
-    if(ap&&c.type==='paternity'&&cmp.used){h+='<p class="help">'+refs.filter(l=>l.id!=='mo').map(l=>{const cpi=paternityIndex(sim,l.g),v=compare(sim).res[l.id];return l.name+': '+(v.mis?'excluded':'CPI = '+fmtBig(cpi)+', probability '+(100*cpi/(cpi+1)).toFixed(cpi>1e3?3:1)+'%');}).join('<br>')+'</p>';}
+    if(ap&&c.type==='paternity'&&cmp.used){h+='<p class="help">'+refs.filter(l=>l.id!=='mo').map(l=>{const cpi=paternityIndex(sim,l.g),v=compare(sim).res[l.id];return l.name+': '+(v.mis>=2?'excluded':'CPI = '+fmtBig(cpi)+', probability '+(100*cpi/(cpi+1)).toFixed(cpi>1e3?3:1)+'%');}).join('<br>')+'</p>';}
     return h;},
   narrate(sim){const st=sim.st,p=sim.p,c=getCase(sim),hon=atLeast('honors'),ap=atLeast('ap');
     if(st.pcr)return 'PCR cycle '+Math.floor(st.cyc)+': heat splits each DNA double strand, primers stick to the ends of the STR region, and the enzyme copies it. <b>Each cycle doubles the copies</b>'+(p.eff<100?' (here only '+p.eff+'% of them copy each cycle)':'')+'.';
@@ -258,7 +259,7 @@ function evN0(sim){const ev=getCase(sim).lanes.find(l=>l.ev);return ev.N0*(ev.mi
 function restartPCR(sim){const st=sim.st;st.cyc=0;st.pcr=true;st.gel=0;st.gelOn=false;}
 function fmtBig(v){return v>=1e4?sci(v,2):v>=10?Math.round(v).toLocaleString('en-US'):v.toFixed(2);}
 function summary(sim){const c=getCase(sim),cmp=compare(sim);if(!cmp.used)return 'Run and read a locus';
-  const refs=c.lanes.filter(l=>l.ref&&l.id!=='mo');const exc=refs.filter(l=>cmp.res[l.id].mis).map(l=>l.short),inc=refs.filter(l=>!cmp.res[l.id].mis).map(l=>l.short);
+  const refs=c.lanes.filter(l=>l.ref&&l.id!=='mo');const need=c.type==='paternity'?2:1,exc=refs.filter(l=>cmp.res[l.id].mis>=need).map(l=>l.short),inc=refs.filter(l=>cmp.res[l.id].mis<need).map(l=>l.short);
   const word=c.type==='paternity'?'not excluded':'cannot be excluded';
   return (exc.length?'Excluded: '+exc.join(', '):'No one excluded yet')+(inc.length?' · '+word+': '+inc.join(', '):'');}
 function locusLine(sim){const c=getCase(sim),p=sim.p,L=LOC(p.locus),ev=c.lanes.find(l=>l.ev),cl=call(sim,ev,L);if(!sim.st.typed.has(L.id))return 'Run and read '+L.id+' first';
@@ -266,7 +267,7 @@ function locusLine(sim){const c=getCase(sim),p=sim.p,L=LOC(p.locus),ev=c.lanes.f
   if(cl.st==='none')return 'No result at '+L.id;if(cl.st==='risk')return gTxt(cl.al)+': possible dropout';
   if(c.type==='mixture')return cl.al.length+' alleles: '+gTxt(cl.al);const g=cl.al.length===1?[cl.al[0],cl.al[0]]:cl.al;return gTxt(cl.al)+' · '+(g[0]===g[1]?'p²':'2pq')+' = '+oneIn(genoFreq(L,g));}
 function statLine(sim){const c=getCase(sim),cmp=compare(sim);if(!cmp.used)return 'Type some loci first';
-  if(c.type==='paternity'){const men=c.lanes.filter(l=>l.ref&&l.id!=='mo'&&!cmp.res[l.id].mis);if(!men.length)return 'All men excluded';const m=men[0],cpi=paternityIndex(sim,m.g);return m.short+': CPI '+fmtBig(cpi)+' ('+(100*cpi/(cpi+1)).toFixed(2)+'%)';}
+  if(c.type==='paternity'){const men=c.lanes.filter(l=>l.ref&&l.id!=='mo'&&cmp.res[l.id].mis<2);if(!men.length)return 'All men excluded';const m=men.slice().sort((a,b)=>paternityIndex(sim,b.g)-paternityIndex(sim,a.g))[0],cpi=paternityIndex(sim,m.g);return m.short+': CPI '+fmtBig(cpi)+' ('+(100*cpi/(cpi+1)).toFixed(2)+'%)';}
   return (c.type==='mixture'?'CPI ':'RMP ')+oneIn(cmp.stat)+' ('+cmp.used+' loci)';}
 
 /* ---------- drawing ---------- */

@@ -122,10 +122,11 @@ const CS={
     {id:'evtype',label:'Type of evidence',unit:'',lvl:'ap',text:true,modes:['collect','document'],get:s=>ITEM(s.p.item).cls}
   ],
   graphs:[{id:'cmp',label:'Evidence found by search pattern',lvl:'bio',custom:true}],defaultGraph:'cmp',
-  plot(sim,ctx,box,id){const keys=Object.keys(PAT),vals=keys.map(k=>{const p=Object.assign({},sim.p,{pattern:k});return Object.values(results(p)).filter(r=>r.found).length;});
-    const ax=axes(ctx,box,{xmin:0,xmax:4,ymin:0,ymax:12,xcats:keys.map(k=>PAT[k].l),yl:'items found (of 11)',yd:0});
+  plot(sim,ctx,box,id){const keys=Object.keys(PAT),hon=atLeast('honors'),vals=keys.map(k=>{const p=Object.assign({},sim.p,{pattern:k});return Object.values(results(p)).filter(r=>r.found).length;});
+    const tm=keys.map(k=>{const t=searchTime(Object.assign({},sim.p,{pattern:k}));return Math.round(hon?t.person:t.wall);});
+    const ax=axes(ctx,box,{xmin:0,xmax:4,ymin:0,ymax:12,xcats:keys.map((k,i)=>PAT[k].l+' · '+tm[i]+' min'),yl:'items found (of 11)',yd:0});
     bars(ctx,ax,vals,{colors:keys.map(k=>k===sim.p.pattern?PAL['s1']:PAL['g-axis']),d:0});
-    keys.forEach((k,i)=>{const t=searchTime(Object.assign({},sim.p,{pattern:k}));txt(ctx,Math.round(atLeast('honors')?t.person:t.wall)+(atLeast('honors')?' person-min':' min'),ax.X(i+0.5),ax.Y(0)-8,{s:12,c:'#fff',a:'center',w:700});});},
+    txt(ctx,hon?'Times are person-minutes (all searchers added up)':'Times are minutes to finish the search',box.L+box.W,box.T+10,{s:12,c:PAL['muted'],a:'right'});},
   infoPanel(sim){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap'),res=results(p),done=sim.st.prog>=1;
     if(p.mode==='search'){const rows=ITEMS.map(it=>{const r=res[it.id],f=r.found&&r.t<=sim.st.prog;const st=f?'Found (#'+markerNo(sim,it)+')':r.trampled&&sim.st.prog>=r.t?'<span style="color:var(--bad)">Destroyed by the team</span>':done?'<span style="color:var(--muted)">Missed</span>':'…';
         return `<tr><td>${p.missed||f?it.n:'?'}</td><td>${st}</td>${hon?`<td>${f||p.missed?toolLinks(it):''}</td>`:''}${ap?`<td>${f||p.missed?it.cls:''}</td><td>${f||p.missed?it.pv:''}</td>`:''}</tr>`;}).join('');

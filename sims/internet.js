@@ -320,22 +320,23 @@ function drawNet(sim,ctx,k,t){const p=sim.p,st=sim.st,T=topo(sim),hon=atLeast('h
     const x0=small?150:120,cw=Math.min(36,(800-x0-200)/N);for(let i=1;i<=N;i++){const x=x0+(i-1)*cw,got=SS.got[i];rr(ctx,x+2,y-14,cw-4,28,5);if(got){ctx.fillStyle=SS.oooSeq[i]?'#c27a00':'#2d6bd2';ctx.fill();}else{ctx.strokeStyle=PAL['line'];ctx.lineWidth=1.5;ctx.stroke();}
       if(cw>=12*k*1.2||i%2===1)mt(ctx,String(i),x+cw/2,y+1,{s:Math.min(12*k,cw*0.7)>=12?Math.min(12*k,cw*0.7):12,w:700,c:got?'#fff':PAL['cv-soft'],a:'center',b:'middle'});}
     const done=SS.done,msg=done?(small?'Essay complete':'Reassembled: essay complete'):SS.fail?SS.fail:SS.N?(SS.got.filter(Boolean).length+'/'+SS.N):'';if(msg)txt(ctx,msg,790,y,{s:13*k,w:700,a:'right',b:'middle',c:done?PAL['s3']:SS.fail?PAL['s1']:PAL['cv-soft']});}}
-function boxDims(ctx,b,k){const s=13*k;ctx.font='700 '+s+'px sans-serif';const nm=k>1.3?b.s:b.n;const w=Math.max(ctx.measureText(nm).width+24,110);return {w,h:s*1.6+(atLeast('honors')&&k<=1.3?18:10),nm};}
+function boxDims(ctx,b,k){const s=15*Math.min(k,1.5);ctx.font='700 '+s+'px sans-serif';const nm=k>1.3?b.s:b.n;const w=Math.max(ctx.measureText(nm).width+24,110);return {w,h:s*1.6+(atLeast('honors')&&k<=1.3?18:10),nm};}
 function drawDns(sim,ctx,k,t){const st=sim.st,w=st.dw,hon=atLeast('honors');
   const ctr=n=>DBOX[n];['root','tld','auth'].forEach(n=>{const A=ctr('R'),B=ctr(n);ctx.strokeStyle=PAL['cv-soft'];ctx.globalAlpha=0.5;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.globalAlpha=1;});
   ctx.strokeStyle=PAL['cv-soft'];ctx.globalAlpha=0.5;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ctr('L').x,ctr('L').y);ctx.lineTo(ctr('R').x,ctr('R').y);ctx.stroke();ctx.globalAlpha=1;
   const used=new Set();if(w)w.steps.slice(0,w.done?w.steps.length:w.i).forEach(s=>{used.add(s[0]);used.add(s[1]);});
-  Object.keys(DBOX).forEach(n=>{const b=DBOX[n],d=boxDims(ctx,b,k);const down=n==='auth'&&sim.p.authDown;rr(ctx,b.x-d.w/2,b.y-d.h/2,d.w,d.h,10);ctx.fillStyle=down?'#8a8a90':n==='L'?'#3a3e45':n==='R'?'#5b3fa0':'#3f5f7f';ctx.fill();
+  const boxes=()=>Object.keys(DBOX).forEach(n=>{const b=DBOX[n],d=boxDims(ctx,b,k);const down=n==='auth'&&sim.p.authDown;rr(ctx,b.x-d.w/2,b.y-d.h/2,d.w,d.h,10);ctx.fillStyle=down?'#8a8a90':n==='L'?'#3a3e45':n==='R'?'#5b3fa0':'#3f5f7f';ctx.fill();
     if(used.has(n)){ctx.strokeStyle=PAL['s4'];ctx.lineWidth=3;ctx.stroke();}
-    txt(ctx,d.nm,b.x,b.y-(hon&&k<=1.3?7:0),{s:13*k,w:700,c:'#fff',a:'center',b:'middle'});if(hon&&k<=1.3)txt(ctx,down?'not answering':b.ip,b.x,b.y+12,{s:12,c:'#e6e6ea',a:'center',b:'middle'});});
+    txt(ctx,d.nm,b.x,b.y-(hon&&k<=1.3?8:0),{s:15*Math.min(k,1.5),w:700,c:'#fff',a:'center',b:'middle'});if(hon&&k<=1.3)txt(ctx,down?'not answering':b.ip,b.x,b.y+13,{s:13,c:'#e6e6ea',a:'center',b:'middle'});});
   if(w){const s=w.steps[w.i],A=DBOX[s[0]],B=DBOX[s[1]],lostTry=sim.p.authDown&&s[1]==='auth';const ms=lostTry?100:DMS[dkey(s[0],s[1])];let f=w.done?1:clamp(w.prog/ms,0,1);if(lostTry)f=Math.min(f*1.6,0.55);
     if(!w.done){const x=A.x+(B.x-A.x)*f,y=A.y+(B.y-A.y)*f;ctx.fillStyle=lostTry&&f>=0.55?PAL['s1']:'#7b3fe4';ctx.beginPath();ctx.arc(x,y,9*Math.min(k,1.4),0,6.29);ctx.fill();if(lostTry&&f>=0.55)mt(ctx,'✕',x,y-22*k,{s:16*k,c:PAL['s1'],a:'center',b:'middle'});}
+    boxes();
     // caption card for the current message
     rr(ctx,16,384,768,58,10);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=PAL['line'];ctx.lineWidth=1;ctx.stroke();
     const cap=w.done?(sim.p.authDown?'Lookup failed after '+Math.round(w.total)+' ms: no IP address, so no connection.':'Done in '+Math.round(w.total)+' ms: '+SITE+' = 203.0.113.80'):(w.i+1)+'. '+s[2];let fs=14*k;ctx.font='600 '+fs+'px sans-serif';while(ctx.measureText(cap).width>740&&fs>12*k){fs-=1;ctx.font='600 '+fs+'px sans-serif';}
     let line=cap;if(ctx.measureText(cap).width>740){const words=cap.split(' ');let a='',i=0;while(i<words.length&&ctx.measureText(a+words[i]+' ').width<740){a+=words[i]+' ';i++;}txt(ctx,a.trim(),400,400,{s:fs,w:600,a:'center',b:'middle'});txt(ctx,words.slice(i).join(' '),400,426,{s:fs,w:600,a:'center',b:'middle'});}
     else txt(ctx,line,400,413,{s:fs,w:600,a:'center',b:'middle',c:w.done&&sim.p.authDown?PAL['s1']:PAL['cv-ink']});}
-  else{txt(ctx,'Press Look it up to find '+(k>1.3?'the site’s IP':'the IP address of '+SITE),400,413,{s:14*k,c:PAL['cv-soft'],a:'center',b:'middle'});}}
+  else{boxes();txt(ctx,'Press Look it up to find '+(k>1.3?'the site’s IP':'the IP address of '+SITE),400,413,{s:14*k,c:PAL['cv-soft'],a:'center',b:'middle'});}}
 NET.controls[0].onChange=modeChanged;
 NET.onLevel=syncMode;
 BioLab.register(NET);

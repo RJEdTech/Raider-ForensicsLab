@@ -368,7 +368,7 @@ BL.start=function(){
   let rT;window.addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(()=>{if(!active)drawThumbs(true);else drawGraph(active);},150);});
   show(location.hash.slice(1));
   let last=performance.now(),acc=0;
-  function frame(now){const rdt=Math.min(0.05,(now-last)/1000);last=now;const sim=active;
+  function frame(now){const rdt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;const sim=active;
     if(sim){const d=sim.def;const stepping=sim.stepLeft>0;if(stepping)sim.stepLeft-=rdt;const runs=(sim.running||stepping)&&(!d.timeless||d.animated);
       if(runs&&!d.timeless){let dt=rdt*(d.timeScale||1)*sim.speed;while(dt>1e-12){const h=Math.min(dt,d.dtMax||0.01);d.step(sim,h);sim.t+=h;dt-=h;}challengeTick(sim);sample(sim);}
       else if(runs&&d.timeless&&d.step){d.step(sim,rdt*sim.speed);sim.t+=rdt*sim.speed;challengeTick(sim);}
