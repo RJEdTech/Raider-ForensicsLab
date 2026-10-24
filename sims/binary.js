@@ -74,10 +74,10 @@ function syncMode(sim){if(!atLeast('honors')&&sim.p.mode==='float')BioLab.setVal
 /* ---------- layouts (shared by draw, clicks and tour focus) ---------- */
 function bitsLayout(w){if(w===8)return {rows:1,cw:80,ch:64,x0:80,y0:120,gap:0};const rows=w/8;return {rows,cw:76,ch:46,x0:96,y0:rows===2?118:70,gap:30};}
 function bitCell(L,w,i){const pos=w-1-i,row=Math.floor(pos/8),col=pos%8;return {x:L.x0+col*L.cw,y:L.y0+row*(L.ch+L.gap),w:L.cw,h:L.ch};}
-function caseLayout(cs,grid){const n=cs.rx.length,cols=n+(grid?1:0),cw=Math.min(52,Math.floor(700/cols));return {x0:80,cw,yg:72,yb:96,rh:27,n,cols};}
+let K=1;function caseLayout(cs,grid){const n=cs.rx.length,cols=n+(grid?1:0),cw=Math.min(52,Math.floor(700/cols));return {x0:80,cw,yg:72,yb:100,rh:K>1.3?28:31,n,cols};}
 
 const BIN={
-  id:'binary',hash:'binary',apUnit:20,order:1,tab:'Data is just bits',kind:'Learning tool',
+  id:'binary',hash:'binary',apUnit:20,order:1,next:['internet','filesig','hashing'],tab:'Data is just bits',kind:'Learning tool',
   card:'Flip bit switches, turn text and pixels into bytes, and track down the one flipped bit that changed a team message.',
   title:'Data is just bits',
   lede:{bio:'Every number, letter, color and photo in a computer is stored as switches that are off (0) or on (1). Flip the switches, read text and pixels as numbers, then find the one bit that broke a message.',
@@ -94,11 +94,11 @@ const BIN={
     {id:'width',label:'Number of bits',type:'seg',def:8,modes:['bits','overflow'],options:[{v:8,l:'8 bits'},{v:16,l:'16 bits',lvl:'honors'},{v:32,l:'32 bits',lvl:'ap'}],
       onChange(sim){const m=P2(W(sim));sim.st.val=sim.st.val%m;sim.st.score=sim.st.score%m;}},
     {id:'signed',label:'Signed (two’s complement)',type:'toggle',def:false,lvl:'ap',modes:['bits','overflow'],help:'The leftmost bit counts as negative, so the same switches can hold negative numbers.'},
-    {id:'pix',label:'Selected pixel',type:'range',min:0,max:63,step:1,def:18,modes:['image'],help:'Or click a pixel in the picture.',
+    {id:'pix',noTrial:true,label:'Selected pixel',type:'range',min:0,max:63,step:1,def:18,modes:['image'],help:'Or click a pixel in the picture.',
       onChange(sim){const i=clamp(Math.round(+sim.p.pix)||0,0,63);sim.st.sel=i;const c=sim.st.px[i];BioLab.setValues(sim,{r:c[0],g:c[1],b:c[2]});}},
-    {id:'r',label:'Red',type:'range',min:0,max:255,step:1,def:58,modes:['image'],onChange(sim){sim.st.px[sim.st.sel][0]=clamp(Math.round(+sim.p.r)||0,0,255);}},
-    {id:'g',label:'Green',type:'range',min:0,max:255,step:1,def:42,modes:['image'],onChange(sim){sim.st.px[sim.st.sel][1]=clamp(Math.round(+sim.p.g)||0,0,255);}},
-    {id:'b',label:'Blue',type:'range',min:0,max:255,step:1,def:26,modes:['image'],onChange(sim){sim.st.px[sim.st.sel][2]=clamp(Math.round(+sim.p.b)||0,0,255);}}
+    {id:'r',noTrial:true,label:'Red',type:'range',min:0,max:255,step:1,def:58,modes:['image'],onChange(sim){sim.st.px[sim.st.sel][0]=clamp(Math.round(+sim.p.r)||0,0,255);}},
+    {id:'g',noTrial:true,label:'Green',type:'range',min:0,max:255,step:1,def:42,modes:['image'],onChange(sim){sim.st.px[sim.st.sel][1]=clamp(Math.round(+sim.p.g)||0,0,255);}},
+    {id:'b',noTrial:true,label:'Blue',type:'range',min:0,max:255,step:1,def:26,modes:['image'],onChange(sim){sim.st.px[sim.st.sel][2]=clamp(Math.round(+sim.p.b)||0,0,255);}}
   ],
   actions:[
     {id:'add1',label:'Add 1',primary:true,modes:['bits'],run(sim){const st=sim.st,m=P2(W(sim));if(st.val+1>=m)st.carryT=1.4;st.val=(st.val+1)%m;}},
@@ -117,17 +117,17 @@ const BIN={
   init(sim){return {val:165,carryT:0,score:0,earned:0,wraps:0,wrapT:0,text:'Café',px:artPx(),sel:18,fa:'0.1',fb:'0.2',cs:newCase(sim.p.caseSel),msg:''};},
   metrics:[
     {id:'dec',label:'Decimal',lvl:'bio',d:0,modes:['bits'],get:s=>shown(s)},
-    {id:'binS',label:'Binary',text:true,modes:['bits'],get:s=>grp(bin(s.st.val,W(s)),4)},
-    {id:'hexS',label:'Hex',lvl:'honors',text:true,modes:['bits'],get:s=>'0x'+hex(s.st.val,W(s))},
-    {id:'range',label:'This many bits can hold',text:true,modes:['bits','overflow'],get:s=>{const w=W(s);return s.p.signed?'−'+P2(w-1).toLocaleString('en-US')+' to '+(P2(w-1)-1).toLocaleString('en-US'):'0 to '+(P2(w)-1).toLocaleString('en-US');}},
+    {id:'binS',noTrial:true,label:'Binary',text:true,modes:['bits'],get:s=>grp(bin(s.st.val,W(s)),4)},
+    {id:'hexS',noTrial:true,label:'Hex',lvl:'honors',text:true,modes:['bits'],get:s=>'0x'+hex(s.st.val,W(s))},
+    {id:'range',noTrial:true,label:'This many bits can hold',text:true,modes:['bits','overflow'],get:s=>{const w=W(s);return s.p.signed?'−'+P2(w-1).toLocaleString('en-US')+' to '+(P2(w-1)-1).toLocaleString('en-US'):'0 to '+(P2(w)-1).toLocaleString('en-US');}},
     {id:'earned',label:'Points earned',d:0,modes:['overflow'],get:s=>s.st.earned},
     {id:'stored',label:'Score the game shows',d:0,modes:['overflow'],get:s=>s.p.signed?signedOf(s.st.score,W(s)):s.st.score},
     {id:'wraps',label:'Times it rolled over',lvl:'honors',d:0,modes:['overflow'],get:s=>s.st.wraps},
     {id:'nch',label:'Characters',d:0,modes:['text'],get:s=>[...s.st.text].length},
     {id:'nby',label:'Bytes (UTF-8)',d:0,modes:['text'],get:s=>ENC.encode(s.st.text).length},
     {id:'nbits',label:'Bits',lvl:'honors',d:0,modes:['text'],get:s=>ENC.encode(s.st.text).length*8},
-    {id:'pxc',label:'Selected pixel',text:true,modes:['image'],get:s=>{const c=s.st.px[s.st.sel];return (atLeast('honors')?rgbHex(c)+'  ':'')+'R '+c[0]+', G '+c[1]+', B '+c[2];}},
-    {id:'isz',label:'Picture size',unit:'bytes',d:0,modes:['image'],get:()=>8*8*3},
+    {id:'pxc',noTrial:true,label:'Selected pixel',text:true,modes:['image'],get:s=>{const c=s.st.px[s.st.sel];return (atLeast('honors')?rgbHex(c)+'  ':'')+'R '+c[0]+', G '+c[1]+', B '+c[2];}},
+    {id:'isz',noTrial:true,label:'Picture size',unit:'bytes',d:0,modes:['image'],get:()=>8*8*3},
     {id:'fsum',label:'Computer’s answer',lvl:'honors',text:true,modes:['float'],get:s=>{const f=floatPair(s);return f?String(f.sum):'—';}},
     {id:'ferr',label:'Off from the true sum by',lvl:'honors',text:true,modes:['float'],get:s=>{const f=floatPair(s);return f?f.errText:'—';}},
     {id:'cerr',label:'Characters failing the check',d:0,modes:['case'],get:s=>s.p.parity?nFail(s.st.cs):null},
@@ -248,7 +248,7 @@ const BIN={
     {lvl:'ap',t:'Two’s complement',d:'The standard way to store negative integers: the top bit has negative weight. Negate by flipping all bits and adding 1.'},{lvl:'ap',t:'IEEE 754 double',d:'64 bits: 1 sign, 11 exponent, 52 fraction. About 15–17 significant decimal digits.'},{lvl:'ap',t:'2D parity',d:'Parity bits for every row and column of a block of data; one flipped bit is located where the failing row and column cross.'},{lvl:'ap',t:'KiB / MiB',d:'Powers of 2: 1 KiB = 1024 bytes, 1 MiB = 1024 KiB.'}],
   about:'<p>Every number here is computed in your browser. Text bytes come from the browser’s real UTF-8 encoder. Decimal sums use real 64-bit floating-point arithmetic, and the “exactly stored” values are worked out from the actual bits with whole-number math, so every digit shown is exact. The binary expansion of a typed decimal is found by exact doubling, which shows where it starts to repeat.</p><p>The messages use 8-bit ASCII with one even-parity bit per character, as early serial links and memory did. Real networks use stronger checks (CRCs and checksums) and real storage uses error-correcting codes; 2D parity is a simple version of the same idea. The parity bits themselves are assumed to arrive correctly. The picture is a tiny fictional 8 × 8 image with no compression. Comet Dash is a made-up game. People and teams in the messages are fictional.</p>',
   initVis(sim){},
-  step(sim,dt){const st=sim.st;st.carryT=Math.max(0,st.carryT-dt);st.wrapT=Math.max(0,st.wrapT-dt);},
+  step(sim,dt){const st=sim.st;dt=Math.max(0,dt||0);st.carryT=Math.max(0,st.carryT-dt);st.wrapT=Math.max(0,st.wrapT-dt);},
   draw(sim,ctx,vdt,k,t){const p=sim.p;ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(0,0,800,450);
     if(p.mode==='case')drawCase(sim,ctx,k,t);else if(p.mode==='bits')drawBits(sim,ctx,k,t);else if(p.mode==='text')drawText(sim,ctx,k);else if(p.mode==='image')drawImage(sim,ctx,k);else if(p.mode==='overflow')drawOverflow(sim,ctx,k,t);else drawFloat(sim,ctx,k);},
   thumbSetup(sim){sim.p.parity=true;}
@@ -268,7 +268,7 @@ function floatPair(sim){const st=sim.st,a=parseFloat(st.fa),b=parseFloat(st.fb);
 /* ---------- drawing ---------- */
 function cellBox(ctx,x,y,w,h,on,col,label,k,o){o=o||{};rr(ctx,x+3,y+3,w-6,h-6,7);if(on){ctx.fillStyle=col||ON;ctx.fill();}else{ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=o.stroke||PAL['line'];ctx.lineWidth=1.5;ctx.stroke();}
   if(label!==undefined)mt(ctx,label,x+w/2,y+h/2+1,{s:(o.s||15)*k,w:700,c:on?'#fff':PAL['cv-soft'],a:'center',b:'middle'});}
-function drawCase(sim,ctx,k,t){const p=sim.p,cs=sim.st.cs,C=CASES[cs.i],ap=atLeast('ap'),hon=atLeast('honors'),grid=p.grid&&ap,L=caseLayout(cs,grid);
+function drawCase(sim,ctx,k,t){K=k;const p=sim.p,cs=sim.st.cs,C=CASES[cs.i],ap=atLeast('ap'),hon=atLeast('honors'),grid=p.grid&&ap,L=caseLayout(cs,grid);
   txt(ctx,'Received from '+C.from+':',16,30,{s:14*k,w:700,c:PAL['cv-soft']});
   const n=L.n,par=p.parity,failRows=grid?[...Array(8).keys()].filter(b=>rowFail(cs,b)):[];
   // highlight selected column
@@ -278,7 +278,7 @@ function drawCase(sim,ctx,k,t){const p=sim.p,cs=sim.st.cs,C=CASES[cs.i],ap=atLea
   for(let c=0;c<n;c++){const x=L.x0+c*L.cw,v=cs.rx[c],fail=par&&colFail(cs,c);
     if(fail){ctx.fillStyle='rgba(198,40,40,.14)';ctx.fillRect(x+1,L.yg-24,L.cw-2,L.yb+8*L.rh+L.rh-L.yg+24);}
     mt(ctx,glyph(v),x+L.cw/2,L.yg,{s:20*k,w:700,a:'center',b:'middle',c:fail?PAL['s1']:PAL['cv-ink']});
-    for(let r=0;r<8;r++){const b=7-r,on=bitOf(v,b),y=L.yb+r*L.rh;cellBox(ctx,x,y,L.cw,L.rh+1,on,ON,String(on),k,{s:12});
+    for(let r=0;r<8;r++){const b=7-r,on=bitOf(v,b),y=L.yb+r*L.rh;cellBox(ctx,x,y,L.cw,L.rh+1,on,ON,String(on),k,{s:13});
       if(cs.touched[c+':'+b]){ctx.fillStyle=PAL['s4'];ctx.beginPath();ctx.arc(x+L.cw-8,y+7,3.5,0,6.29);ctx.fill();}
       if(grid&&fail&&failRows.includes(b)){ctx.strokeStyle=PAL['s1'];ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+L.cw/2,y+L.rh/2,Math.min(L.cw,L.rh)/2+3,0,6.29);ctx.stroke();}}
     if(par){const pb=parBit(cs.orig[c]),y=L.yb+8*L.rh;cellBox(ctx,x,y,L.cw,L.rh+1,pb,PAR,String(pb),k,{s:12,stroke:PAR});
@@ -289,7 +289,7 @@ function drawCase(sim,ctx,k,t){const p=sim.p,cs=sim.st.cs,C=CASES[cs.i],ap=atLea
   for(let r=0;r<8;r++)txt(ctx,String(P2(7-r)),L.x0-8,L.yb+r*L.rh+L.rh/2+1,{s:12*k,c:PAL['cv-soft'],a:'right',b:'middle',w:600});
   if(par)txt(ctx,hon?'parity':'check',L.x0-8,L.yb+8*L.rh+L.rh/2+1,{s:12*k,c:PAL['s5'],a:'right',b:'middle',w:700});
   // status
-  const y0=par?L.yb+9*L.rh+28*k+13*k:L.yb+8*L.rh+24+13*k;let msg,bg;
+  const y0=par?L.yb+9*L.rh+20*k+13*k:L.yb+8*L.rh+24+13*k;let msg,bg;
   if(solved(cs)){msg='Fixed: “'+C.sent+'”';bg=GOOD;}else if(!par){msg=k>1.3?'Which letter changed?':'One bit flipped. Which character changed?';bg='#5d5d63';}
   else{const nf=nFail(cs);msg=nf?(nf+' character'+(nf>1?'s':'')+' fail'+(nf>1?'':'s')+' the check'):(cs.two?'Check passes, but two flips hid':'Every character passes');bg=nf?BAD:WARM;}
   pill(ctx,msg,400,y0,bg,'#fff',15*k);
@@ -307,16 +307,19 @@ function drawBits(sim,ctx,k,t){const p=sim.p,st=sim.st,w=W(sim),L=bitsLayout(w),
   if(w===8){const on=[];for(let i=7;i>=0;i--)if(bitOf(st.val,i))on.push((sg&&i===7?'−':'')+P2(i));let eq=on.length?on.join(' + ')+' = '+v:'all off = 0';
     let s=17*k;ctx.font='700 '+s+'px '+MONO;while(ctx.measureText(eq).width>760&&s>12*k){s-=1;ctx.font='700 '+s+'px '+MONO;}mt(ctx,eq,400,hon?310:276,{s,w:700,a:'center',b:'middle'});}
   const yR=w===8?(hon?378:350):Math.min(418,L.y0+L.rows*(L.ch+L.gap)+22);
-  const items=[['Decimal',v.toLocaleString('en-US')],['Binary',w===8?grp(bin(st.val,w),4):null],[ 'Hex','0x'+hex(st.val,w)]].filter(a=>a[1]!==null&&(a[0]!=='Hex'||hon));
-  if(k>1.3&&items.length>2)items.splice(1,1);const gap=800/(items.length+1);items.forEach((a,i)=>{pill(ctx,a[0]+'  '+a[1],gap*(i+1),yR,PAL['card2'],PAL['cv-ink'],16*k);});}
+  const items=[['Decimal',v.toLocaleString('en-US').replace('-','−')],['Binary',w===8?grp(bin(st.val,w),4):null],[ 'Hex','0x'+hex(st.val,w)]].filter(a=>a[1]!==null&&(a[0]!=='Hex'||hon));
+  if(k>1.3&&items.length>2)items.splice(1,1);const gap=800/(items.length+1);items.forEach((a,i)=>{chip(ctx,a[0],a[1],gap*(i+1),yR,k);});
+  if(w===8)txt(ctx,'One byte: click any switch to flip it',400,52,{s:14*k,c:PAL['cv-soft'],a:'center',b:'middle',w:600});}
+function chip(ctx,l,v,x,y,k){const s=15*k;ctx.font='600 '+s+'px sans-serif';const wl=ctx.measureText(l+'  ').width;ctx.font='700 '+s+'px '+MONO;const wv=ctx.measureText(v).width,w=wl+wv+24,h=s*2;rr(ctx,x-w/2,y-h/2,w,h,10);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=PAL['line'];ctx.lineWidth=1.5;ctx.stroke();txt(ctx,l,x-w/2+12,y+1,{s,w:600,c:PAL['cv-soft'],b:'middle'});mt(ctx,v,x-w/2+12+wl,y+1,{s,w:700,b:'middle'});}
 function drawText(sim,ctx,k){const st=sim.st,hon=atLeast('honors'),ch=[...st.text];const cw=Math.max(80,62*k),maxC=Math.floor(760/cw),shownC=ch.slice(0,maxC),x0=400-shownC.length*cw/2;
   if(!ch.length){txt(ctx,'Type some text in the panel below.',400,225,{s:16*k,c:PAL['cv-soft'],a:'center',b:'middle'});return;}
-  shownC.forEach((c,i)=>{const x=x0+i*cw+cw/2,b=u8(c);rr(ctx,x-cw/2+4,62,cw-8,b.length>1?318:300,10);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=b.length>1?PAL['s4']:PAL['line'];ctx.lineWidth=b.length>1?2:1;ctx.stroke();
+  const bh=34*Math.min(k,1.25),maxB=Math.max(...shownC.map(c=>u8(c).length)),yl=162+maxB*(bh+4)+14*k,cardH=yl+16*k-62;const oy=Math.max(0,(300-cardH)/2);ctx.save();ctx.translate(0,oy);
+  shownC.forEach((c,i)=>{const x=x0+i*cw+cw/2,b=u8(c);rr(ctx,x-cw/2+4,62,cw-8,cardH,10);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=b.length>1?PAL['s4']:PAL['line'];ctx.lineWidth=b.length>1?2:1;ctx.stroke();
     txt(ctx,c===' '?'␣':c,x,104,{s:30*k,w:700,a:'center',b:'middle'});txt(ctx,hon?uplus(cpOf(c)):'code '+cpOf(c),x,142,{s:12*k,c:PAL['cv-soft'],a:'center',b:'middle',w:600});
-    const bh=34*Math.min(k,1.25);b.forEach((v,j)=>{const y=162+j*(bh+4);cellBox(ctx,x-cw/2+8,y,cw-16,bh,true,ON,hon?hex(v,8):String(v),k,{s:15});});
-    txt(ctx,b.length+(b.length>1?' bytes':' byte'),x,364,{s:12*k,w:700,c:b.length>1?PAL['s4']:PAL['cv-soft'],a:'center',b:'middle'});});
-  const nb=ENC.encode(st.text).length;txt(ctx,(ch.length>maxC?'First '+maxC+' of '+ch.length+' characters. ':'')+ch.length+' character'+(ch.length>1?'s':'')+' → '+nb+' bytes = '+nb*8+' bits',400,416,{s:15*k,w:700,a:'center',b:'middle'});
-  txt(ctx,hon?'UTF-8 bytes in hex':'UTF-8 bytes',400,36,{s:13*k,c:PAL['cv-soft'],a:'center',b:'middle',w:600});}
+    b.forEach((v,j)=>{const y=162+j*(bh+4);cellBox(ctx,x-cw/2+8,y,cw-16,bh,true,ON,hon?hex(v,8):String(v),k,{s:15});});
+    txt(ctx,b.length+(b.length>1?' bytes':' byte'),x,yl,{s:12*k,w:700,c:b.length>1?PAL['s4']:PAL['cv-soft'],a:'center',b:'middle'});});
+  const nb=ENC.encode(st.text).length;txt(ctx,(ch.length>maxC?'First '+maxC+' of '+ch.length+' characters. ':'')+ch.length+' character'+(ch.length>1?'s':'')+' → '+nb+' bytes = '+nb*8+' bits',400,Math.max(62+cardH+34*k,300),{s:15*k,w:700,a:'center',b:'middle'});
+  txt(ctx,hon?'UTF-8 bytes in hex':'UTF-8 bytes',400,36,{s:13*k,c:PAL['cv-soft'],a:'center',b:'middle',w:600});ctx.restore();}
 function drawImage(sim,ctx,k){const st=sim.st,hon=atLeast('honors');
   for(let i=0;i<64;i++){const x=40+(i%8)*40,y=60+Math.floor(i/8)*40,c=st.px[i];ctx.fillStyle='rgb('+c.join(',')+')';ctx.fillRect(x,y,40,40);}
   ctx.strokeStyle=PAL['line'];ctx.lineWidth=1;for(let i=0;i<=8;i++){ctx.beginPath();ctx.moveTo(40+i*40,60);ctx.lineTo(40+i*40,380);ctx.moveTo(40,60+i*40);ctx.lineTo(360,60+i*40);ctx.stroke();}
@@ -332,7 +335,7 @@ function drawOverflow(sim,ctx,k,t){const p=sim.p,st=sim.st,w=W(sim),sg=p.signed&
   ctx.strokeStyle=PAL['line'];ctx.lineWidth=16;ctx.beginPath();ctx.arc(cx,cy,R,0,6.29);ctx.stroke();
   const ang=v=>-Math.PI/2+(v/M)*Math.PI*2;
   ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=1.5;for(let i=0;i<32;i++){const a=-Math.PI/2+i/32*Math.PI*2,r1=R-8,r2=R+(i%8===0?14:8);ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);ctx.stroke();}
-  const lab=v=>{const s=sg?signedOf(v,w):v;return s.toLocaleString('en-US');};
+  const lab=v=>{const s=sg?signedOf(v,w):v;return s.toLocaleString('en-US').replace('-','−');};
   [[0,'top'],[M/4,'right'],[M/2,'bottom'],[3*M/4,'left']].forEach(([v,pos])=>{const a=ang(v),r=R+30;const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;txt(ctx,lab(v),x,y+(pos==='top'?-4:pos==='bottom'?6:0),{s:13*k,w:700,c:PAL['cv-soft'],a:pos==='right'?'left':pos==='left'?'right':'center',b:'middle'});});
   const wv=sg?M/2:0,wa=ang(wv);ctx.strokeStyle=PAL['s1'];ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx+Math.cos(wa)*(R-12),cy+Math.sin(wa)*(R-12));ctx.lineTo(cx+Math.cos(wa)*(R+12),cy+Math.sin(wa)*(R+12));ctx.stroke();
   txt(ctx,lab(wv-1+(sg?0:M)),cx-(sg?36:14),sg?cy+R+36:cy-R-30,{s:13*k,w:700,c:PAL['s1'],a:'right',b:'middle'});
@@ -358,7 +361,7 @@ function drawFloat(sim,ctx,k){const st=sim.st,ap=atLeast('ap'),f=floatPair(sim);
   mt(ctx,head,400,44,{s,w:700,a:'center',b:'middle',c:f.sum===f.exactSumNum&&f.errText.startsWith('0')?PAL['s3']:PAL['s1']});
   const nd=k>1.3?20:34;const rows=[[st.fa+' is stored as',exactDec(f.a)],[st.fb+' is stored as',exactDec(f.b)],['the sum is stored as',exactDec(f.sum)],['the true sum is',f.exact]];
   rows.forEach((r,i)=>{const y=96+i*58;txt(ctx,r[0],40,y,{s:13*k,c:PAL['cv-soft'],b:'middle',w:600});mt(ctx,shortDec(r[1],nd),40,y+24,{s:16*k,w:700,b:'middle',c:i===3?PAL['s3']:PAL['cv-ink']});});
-  const be=binExp(st.fa,40);if(be){const fr=be.d.slice(0,k>1.3?18:30);const s2=st.fa+' in binary = '+be.ip+'.'+(fr||'0')+(be.ends&&be.d.length<=fr.length?'':'…')+(be.rep>=0?' (repeats forever)':'');txt(ctx,s2,40,ap?346:360,{s:13*k,w:600,c:PAL['s5'],b:'middle'});}
+  const be=binExp(st.fa,40);if(be){const N=k>1.3?16:28;let full=be.d;if(be.rep>=0){const cyc=be.d.slice(be.rep);while(full.length<N)full+=cyc;}const fr=full.slice(0,N);const s2=st.fa+' in binary = '+be.ip+'.'+(fr||'0')+(be.ends&&be.d.length<=N?'':'…')+(be.rep>=0?' (repeats forever)':'');txt(ctx,s2,40,ap?346:360,{s:13*k,w:600,c:PAL['s5'],b:'middle'});}
   if(ap){const b=bits64(f.sum),x0=40,cw=11.5,y=380;for(let i=0;i<64;i++){const col=i===0?'#b3261e':i<12?'#7b3fe4':ON;if(b[i]==='1'){ctx.fillStyle=col;ctx.fillRect(x0+i*cw,y,cw-2,22);}else{ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(x0+i*cw+.5,y+.5,cw-3,21);}}
     txt(ctx,'sign',x0,y+40,{s:12*k,c:PAL['s1'],w:700,b:'middle'});txt(ctx,'exponent',x0+cw*1.5+20*k,y+40,{s:12*k,c:PAL['s5'],w:700,b:'middle'});txt(ctx,'52 fraction bits of the sum',x0+cw*12+130,y+40,{s:12*k,c:PAL['s2'],w:700,b:'middle'});}
   else txt(ctx,'Off by '+f.errText,400,410,{s:15*k,w:700,a:'center',b:'middle'});}

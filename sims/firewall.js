@@ -3,24 +3,24 @@
 const {clamp,lerp,rr,txt,pill,atLeast,PAL,FONT,RM}=BioLab.h;
 
 /* ---------- Cedar Hollow Public Library (fictional) network ---------- */
-const ZONES={guest:{name:'Guest Wi-Fi',net:'10.30.0.0/24',box:[20,60,250,150],port:[270,135],fw:[335,240]},
-  staff:{name:'Staff',net:'10.10.0.0/24',box:[20,300,250,170],port:[270,385],fw:[335,290]},
-  internet:{name:'Internet',net:'outside addresses',box:[530,60,250,150],port:[530,135],fw:[465,240]},
-  servers:{name:'Servers',net:'10.20.0.0/24',box:[530,300,250,170],port:[530,385],fw:[465,290]}};
+const ZONES={guest:{name:'Guest Wi-Fi',net:'10.30.0.0/24',box:[20,60,250,150],port:[270,135],fw:[345,250]},
+  staff:{name:'Staff',net:'10.10.0.0/24',box:[20,300,250,170],port:[270,385],fw:[345,292]},
+  internet:{name:'Internet',net:'outside addresses',box:[530,60,250,150],port:[530,135],fw:[455,250]},
+  servers:{name:'Servers',net:'10.20.0.0/24',box:[530,300,250,170],port:[530,385],fw:[455,292]}};
 const ZK=['guest','staff','internet','servers'];
 const HOSTS={
   patron:{z:'guest',name:'Patron laptop',ip:'10.30.0.57',x:110,y:150},
   desk:{z:'staff',name:'Desk PC',ip:'10.10.0.21',x:90,y:390},
   itpc:{z:'staff',name:'IT PC',ip:'10.10.0.5',x:200,y:390,lvl:'honors'},
-  news:{z:'internet',name:'News site',ip:'198.51.100.20',x:585,y:122},
-  mail:{z:'internet',name:'Mail service',ip:'198.51.100.25',x:660,y:122},
-  home:{z:'internet',name:'Home patron',ip:'192.0.2.44',x:735,y:122},
+  news:{z:'internet',name:'News site',lab:'News site',ip:'198.51.100.20',x:578,y:122},
+  mail:{z:'internet',name:'Mail service',lab:'Mail',ip:'198.51.100.25',x:655,y:122},
+  home:{z:'internet',name:'Home patron',lab:'Home user',ip:'192.0.2.44',x:735,y:122},
   scanner:{z:'internet',name:'203.0.113.66',ip:'203.0.113.66',x:610,y:178},
   rdpbot:{z:'internet',name:'203.0.113.140',ip:'203.0.113.140',x:710,y:178},
   dns:{z:'servers',name:'DNS server',ip:'10.20.0.53',x:585,y:390},
   files:{z:'servers',name:'File server',ip:'10.20.0.10',x:660,y:390},
   catalog:{z:'servers',name:'Catalog site',ip:'10.20.0.80',x:735,y:390}};
-const SVC={443:{n:'web (HTTPS)',c:'s2'},53:{n:'DNS',c:'s6'},445:{n:'file sharing',c:'s5'},587:{n:'email',c:'s4'},3389:{n:'remote desktop',c:'s1'}};
+const SVC={443:{n:'secure web',c:'s2'},53:{n:'DNS',c:'s6'},445:{n:'file sharing',c:'s5'},587:{n:'email',c:'s4'},3389:{n:'remote desktop',c:'s1'}};
 const svcCol=p=>PAL[(SVC[p]||{c:'cv-soft'}).c];
 const SCAN_PORTS=[21,22,23,25,80,443,445,3389,8080];
 const FLOWS=[
@@ -91,7 +91,7 @@ function usePreset(sim,name){sim.st.chRules=PRESETS[name]();sim.st.pk=[];sim.inf
 const hostVisible=id=>atLeast(HOSTS[id].lvl);
 function pathFor(src,dst){const a=HOSTS[src],b=HOSTS[dst],za=ZONES[a.z],zb=ZONES[b.z];
   if(a.z===b.z)return {pts:[[a.x,a.y],[b.x,b.y]],fwi:-1};
-  return {pts:[[a.x,a.y],za.port,za.fw,[400,265],zb.fw,zb.port,[b.x,b.y]],fwi:2};}
+  return {pts:[[a.x,a.y],za.port,za.fw,[400,271],zb.fw,zb.port,[b.x,b.y]],fwi:2};}
 function spawn(sim,f,port,o){o=o||{};const st=sim.st,src=o.reply?f.dst:f.src,dst=o.reply?f.src:f.dst,P=pathFor(src,dst);
   st.pk.push({f,port,src,dst,proto:f.proto,reply:!!o.reply,test:!!o.test,pts:P.pts,fwi:P.fwi,seg:0,u:0,state:'go',t:0,dport:o.reply?EPH:port});}
 function clockStr(t){const s=Math.floor(9*3600+t);return String(Math.floor(s/3600)%24).padStart(2,'0')+':'+String(Math.floor(s/60)%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
@@ -111,22 +111,24 @@ function step(sim,dt){const st=sim.st;if(sim.p._ch){usePreset(sim,sim.p._ch);sim
       if(p.seg>=p.pts.length-1){p.state='arrive';p.t=0;p.u=0;
         if(!p.reply&&!p.test&&ap&&p.f.good&&!(p.f.okPorts&&!p.f.okPorts.includes(p.port)))spawn(sim,p.f,p.port,{reply:true});break;}}});
   st.pk=st.pk.filter(p=>p.state==='go'||p.t<(p.test?2.5:0.9));
-  if(st.logDirty&&sim.ui&&sim.ui.info){const e=sim.ui.info.querySelector('#fw-log');if(e){e.innerHTML=logHTML(sim);st.logDirty=false;}}}
+  if(st.logDirty&&sim.ui&&sim.ui.info){const e=sim.ui.info.querySelector('#fw-log');if(e){e.innerHTML=logHTML(sim);st.logDirty=false;const n=sim.ui.info.querySelector('#fw-logn');if(n)n.textContent=st.logN;}}}
 
 /* ---------- panel ---------- */
 function injectStyle(){if(document.getElementById('fw-style'))return;const s=document.createElement('style');s.id='fw-style';s.textContent=`
 .fw h4{margin:14px 0 6px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.fw h4:first-child{margin-top:0}
 .fw .fw-goals{list-style:none;padding:0;margin:0;font-size:15px}.fw .fw-goals li{padding:2px 0 2px 26px;position:relative}
 .fw .fw-goals li::before{content:"○";position:absolute;left:4px;color:var(--muted);font-weight:700}.fw .fw-goals li.ok::before{content:"✓";color:var(--good)}
-.fw table{font-size:14px}.fw td,.fw th{padding:5px 6px;text-align:left}.fw td select,.fw td input,.fw .fw-form select,.fw .fw-form input{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:3px 5px;font-size:14px}
-.fw td input.fw-port{width:92px}.fw td input.fw-port[aria-invalid="true"]{border-color:var(--bad)}.fw .fw-ib{border:1px solid var(--line);background:var(--card2);border-radius:6px;padding:2px 7px;cursor:pointer;font-size:14px;line-height:1.3}
-.fw .fw-ib:disabled{opacity:.35;cursor:default}.fw tr.fw-hit td{background:color-mix(in srgb,var(--rj) 10%,transparent)}.fw tr.fw-implicit td{color:var(--muted);font-style:italic}
+.fw .fw-rules{border:1px solid var(--line);border-radius:8px;overflow:hidden}.fw .fw-rule{display:flex;flex-wrap:wrap;gap:5px 6px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line);font-size:14px}.fw .fw-rule:last-child{border-bottom:0}
+.fw .fw-num{font-weight:700;min-width:1.4em;color:var(--muted)}.fw .fw-w{color:var(--muted);font-size:13px;display:inline-flex;gap:4px;align-items:center}.fw .fw-ord{margin-left:auto;display:inline-flex;gap:4px}.fw .fw-rule select{max-width:11.5em}
+.fw .fw-rule select,.fw .fw-rule input,.fw .fw-form select,.fw .fw-form input{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:3px 5px;font-size:14px}
+.fw .fw-rule input.fw-port{width:84px}.fw input.fw-port[aria-invalid="true"]{border-color:var(--bad)}.fw .fw-ib{border:1px solid var(--line);background:var(--card2);border-radius:6px;padding:2px 7px;cursor:pointer;font-size:14px;line-height:1.3}
+.fw .fw-ib:disabled{opacity:.35;cursor:default}.fw .fw-hit{background:color-mix(in srgb,var(--rj) 10%,transparent)}.fw .fw-implicit{color:var(--muted);font-style:italic}
 .fw .fw-act-allow{color:var(--good);font-weight:700}.fw .fw-act-deny{color:var(--bad);font-weight:700}
 .fw .fw-flows{list-style:none;padding:0;margin:0;font-size:14px;line-height:1.35}.fw .fw-flows li{padding:4px 0 4px 24px;position:relative;border-bottom:1px solid var(--line)}
 .fw .fw-flows li:last-child{border-bottom:0}.fw .fw-flows li b{font-weight:600}.fw .fw-flows .fw-ic{position:absolute;left:2px;top:4px;font-weight:800}
 .fw .fw-ok .fw-ic{color:var(--good)}.fw .fw-no .fw-ic{color:var(--bad)}.fw .fw-sub{display:block;color:var(--muted);font-size:13px}
 .fw .fw-note{font-size:14px;color:var(--muted);margin:6px 0 0}.fw .fw-form{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:end}.fw .fw-form label{display:flex;flex-direction:column;font-size:13px;color:var(--muted);gap:2px}
-.fw .fw-trace{list-style:none;padding:0;margin:8px 0 0;font-size:14px}.fw .fw-trace li{padding:3px 0}.fw .fw-log{font:13px/1.45 ui-monospace,Consolas,monospace;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-height:220px;overflow:auto;white-space:pre}`;
+.fw .fw-trace{list-style:none;padding:0;margin:8px 0 0;font-size:14px}.fw .fw-trace li{padding:3px 0}.fw .fw-log{font:13px/1.45 ui-monospace,Consolas,monospace;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-height:220px;overflow:auto;white-space:pre-wrap}`;
   document.head.appendChild(s);}
 function endOptions(sel,forDst){const hon=atLeast('honors');let o=[['any','Any']].concat(ZK.map(z=>[z,ZONES[z].name]));
   if(hon)o=o.concat(['itpc','dns','files','catalog','patron','desk'].map(h=>[h,HOSTS[h].name+' ('+HOSTS[h].ip+')']));
@@ -141,13 +143,13 @@ function panelHTML(sim){injectStyle();const sb=sandbox(sim),hon=atLeast('honors'
   if(ch)h+='<p class="fw-note" style="margin-top:0"><b>Showing a challenge or walkthrough rule set.</b> Press Reset under the stage to go back to your own rules.</p>';
   if(!sb)h+='<h4>The case</h4><p style="margin:0 0 6px;font-size:15px">Last week someone on the library’s guest Wi-Fi opened the staff file share. The firewall has one rule: allow everything. Rewrite the rules so each goal below is met.</p><ul class="fw-goals">'+sc.missions.map(m=>`<li class="${m.ok?'ok':''}">${m.t}</li>`).join('')+'</ul>';
   else h+='<h4>Try it yourself</h4><p class="fw-note" style="margin-top:0">Start from an empty rule list. Write rules, then send your own test packets and watch which rule decides each one.</p>';
-  h+='<h4>Firewall rules (checked top to bottom, first match wins)</h4><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Action</th><th>Source</th><th>Destination</th><th>Port</th><th>Protocol</th>'+(ap?'<th>Log</th>':'')+'<th>Order</th></tr></thead><tbody>';
-  rules.forEach((r,i)=>{const bad=parsePorts(r.port)===null;h+=`<tr class="${i===lastI?'fw-hit':''}"><td>${i+1}</td><td><select aria-label="Rule ${i+1} action" data-a="act" data-i="${i}" data-fid="act${i}" class="fw-act-${r.act}">${actOpts(r.act)}</select></td>
-    <td><select aria-label="Rule ${i+1} source" data-a="src" data-i="${i}" data-fid="src${i}">${endOptions(r.src)}</select></td><td><select aria-label="Rule ${i+1} destination" data-a="dst" data-i="${i}" data-fid="dst${i}">${endOptions(r.dst,true)}</select></td>
-    <td><input class="fw-port" aria-label="Rule ${i+1} port" data-a="port" data-i="${i}" data-fid="port${i}" value="${r.port}" aria-invalid="${bad}"></td><td><select aria-label="Rule ${i+1} protocol" data-a="proto" data-i="${i}" data-fid="proto${i}">${protoOpts(r.proto)}</select></td>
-    ${ap?`<td><input type="checkbox" aria-label="Log rule ${i+1}" data-a="log" data-i="${i}" data-fid="log${i}"${r.log?' checked':''}></td>`:''}
-    <td style="white-space:nowrap"><button type="button" class="fw-ib" data-a="up" data-i="${i}" data-fid="up${i}" aria-label="Move rule ${i+1} up"${i?'':' disabled'}>↑</button> <button type="button" class="fw-ib" data-a="down" data-i="${i}" data-fid="down${i}" aria-label="Move rule ${i+1} down"${i<rules.length-1?'':' disabled'}>↓</button> <button type="button" class="fw-ib" data-a="del" data-i="${i}" data-fid="del${i}" aria-label="Delete rule ${i+1}">✕</button></td></tr>`;});
-  h+=`<tr class="fw-implicit${lastI===-1?' fw-hit':''}"><td>${rules.length+1}</td><td><span class="fw-act-deny">Deny</span></td><td>Any</td><td>Any</td><td>Any</td><td>Any</td>${ap?'<td></td>':''}<td>implicit</td></tr></tbody></table></div>`;
+  h+='<h4>Firewall rules (checked top to bottom, first match wins)</h4><div class="fw-rules">';
+  rules.forEach((r,i)=>{const bad=parsePorts(r.port)===null;h+=`<div class="fw-rule${i===lastI?' fw-hit':''}"><span class="fw-num">${i+1}</span><select aria-label="Rule ${i+1} action" data-a="act" data-i="${i}" data-fid="act${i}" class="fw-act-${r.act}">${actOpts(r.act)}</select>
+    <span class="fw-w">from</span><select aria-label="Rule ${i+1} source" data-a="src" data-i="${i}" data-fid="src${i}">${endOptions(r.src)}</select><span class="fw-w">to</span><select aria-label="Rule ${i+1} destination" data-a="dst" data-i="${i}" data-fid="dst${i}">${endOptions(r.dst,true)}</select>
+    <span class="fw-w">port <input class="fw-port" aria-label="Rule ${i+1} port" data-a="port" data-i="${i}" data-fid="port${i}" value="${r.port}" aria-invalid="${bad}"> <select aria-label="Rule ${i+1} protocol" data-a="proto" data-i="${i}" data-fid="proto${i}">${protoOpts(r.proto)}</select></span>
+    ${ap?`<label class="fw-w"><input type="checkbox" data-a="log" data-i="${i}" data-fid="log${i}"${r.log?' checked':''}> log</label>`:''}
+    <span class="fw-ord"><button type="button" class="fw-ib" data-a="up" data-i="${i}" data-fid="up${i}" aria-label="Move rule ${i+1} up"${i?'':' disabled'}>↑</button><button type="button" class="fw-ib" data-a="down" data-i="${i}" data-fid="down${i}" aria-label="Move rule ${i+1} down"${i<rules.length-1?'':' disabled'}>↓</button><button type="button" class="fw-ib" data-a="del" data-i="${i}" data-fid="del${i}" aria-label="Delete rule ${i+1}">✕</button></span></div>`;});
+  h+=`<div class="fw-rule fw-implicit${lastI===-1?' fw-hit':''}"><span class="fw-num">${rules.length+1}</span><span class="fw-act-deny">Deny</span> <span>everything else (the implicit deny, always last)</span></div></div>`;
   if(rules.some(r=>parsePorts(r.port)===null))h+='<p class="fw-note" style="color:var(--bad)">A port box has an entry the firewall cannot read, so that rule never matches. Use any, a number like 443, a range like 49152-65535, or a list like 80,443.</p>';
   const d=fw.draft;h+=`<div class="fw-form" style="margin-top:8px"><label>Action<select data-a="d-act" data-fid="d-act">${actOpts(d.act)}</select></label><label>Source<select data-a="d-src" data-fid="d-src">${endOptions(d.src)}</select></label><label>Destination<select data-a="d-dst" data-fid="d-dst">${endOptions(d.dst,true)}</select></label>
     <label>Port<input class="fw-port" style="width:92px" data-a="d-port" data-fid="d-port" value="${d.port}"></label><label>Protocol<select data-a="d-proto" data-fid="d-proto">${protoOpts(d.proto)}</select></label>
@@ -171,7 +173,7 @@ function panelHTML(sim){injectStyle();const sb=sandbox(sim),hon=atLeast('honors'
       <label>Port<input class="fw-port" style="width:80px" type="number" min="0" max="65535" data-a="t-port" data-fid="t-port" value="${t.port}"></label><label>Protocol<select data-a="t-proto" data-fid="t-proto">${protoOpts(t.proto).replace('<option value="any">Any</option>','')}</select></label>
       <button type="button" class="btn primary" data-a="trace" data-fid="trace">Send test packet</button></div>`;
     if(fw.trace)h+=traceHTML(fw.trace);}
-  if(ap)h+=`<h4>Firewall log (${sim.st.logN} logged)</h4><div class="fw-log" id="fw-log">${logHTML(sim)}</div>`;
+  if(ap)h+=`<h4>Firewall log (<span id="fw-logn">${sim.st.logN}</span> logged)</h4><div class="fw-log" id="fw-log">${logHTML(sim)}</div>`;
   return h+'</div>';}
 function runTrace(sim){const t=sim.fw.tr,rules=rulesOf(sim),port=clamp(Math.round(+t.port)||0,0,65535),pk={src:t.src,dst:t.dst,proto:t.proto,dport:port};
   if(HOSTS[t.src].z===HOSTS[t.dst].z){sim.fw.trace={same:true,pk};return;}
@@ -202,7 +204,7 @@ function drawHost(ctx,h,k,ph,showLabel){const x=h.x,y=h.y,srv=h.z==='servers',ne
   if(srv){rr(ctx,x-13,y-17,26,32,4);ctx.fill();ctx.stroke();ctx.strokeStyle=PAL['line'];for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(x-8,y-9+i*8);ctx.lineTo(x+8,y-9+i*8);ctx.stroke();}}
   else if(net){ctx.beginPath();ctx.arc(x,y,13,0,6.29);ctx.fill();ctx.stroke();ctx.beginPath();ctx.ellipse(x,y,5.5,13,0,0,6.29);ctx.moveTo(x-13,y);ctx.lineTo(x+13,y);ctx.stroke();}
   else{rr(ctx,x-15,y-12,30,20,3);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x-19,y+11);ctx.lineTo(x+19,y+11);ctx.stroke();}
-  if(showLabel)txt(ctx,h.name,x,y+(net?28:30),{s:12*k,a:'center',c:PAL['cv-soft'],w:600});}
+  if(showLabel)txt(ctx,h.lab||h.name,x,y+(net?28:30),{s:12*k,a:'center',c:PAL['cv-soft'],w:600});}
 function draw(sim,ctx,vdt,k){const st=sim.st,ph=k>1.4,hon=atLeast('honors'),ap=atLeast('ap'),rules=rulesOf(sim),sc=score(sim,rules);
   ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(0,0,800,500);
   // cables
@@ -214,24 +216,24 @@ function draw(sim,ctx,vdt,k){const st=sim.st,ph=k>1.4,hon=atLeast('honors'),ap=a
   // DNS failure hints
   Object.keys(st.noDns).forEach(id=>{const h=HOSTS[id];pill(ctx,'DNS failed',h.x+(h.z==='guest'?92:70),h.y-26,PAL['s1'],'#fff',12*k);});
   // firewall
-  const fw=[335,215,130,100],lastRecent=st.last&&st.clock-st.last.t<1.2;rr(ctx,fw[0],fw[1],fw[2],fw[3],12);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;ctx.stroke();
-  ctx.fillStyle=PAL['rj'];for(let i=0;i<4;i++)for(let j=0;j<2;j++){ctx.globalAlpha=0.25;ctx.fillRect(fw[0]+12+i*28+(j%2)*12,fw[1]+60+j*14,22,10);}ctx.globalAlpha=1;
-  txt(ctx,'Firewall',400,fw[1]+24*Math.min(k,1.25),{s:15*k,w:700,a:'center'});
-  const rl=rules.length+' rule'+(rules.length===1?'':'s')+' + deny';txt(ctx,rl,400,fw[1]+(ph?56:46),{s:12*k,a:'center',c:PAL['cv-soft']});
+  const fw=[345,226,110,90],lastRecent=st.last&&st.clock-st.last.t<1.2;rr(ctx,fw[0],fw[1],fw[2],fw[3],12);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;ctx.stroke();
+  ctx.save();rr(ctx,fw[0]+3,fw[1]+3,fw[2]-6,fw[3]-6,9);ctx.clip();ctx.fillStyle=PAL['rj'];ctx.globalAlpha=0.16;for(let j=0;j<6;j++)for(let i=-1;i<5;i++)ctx.fillRect(fw[0]+6+i*28+(j%2)*14,fw[1]+6+j*14,24,10);ctx.restore();ctx.globalAlpha=1;
+  txt(ctx,'Firewall',400,fw[1]+fw[3]+20*k,{s:15*k,w:700,a:'center'});
+  const rl=rules.length+' rule'+(rules.length===1?'':'s')+' + deny';txt(ctx,rl,400,fw[1]+fw[3]+38*k,{s:12*k,a:'center',c:PAL['cv-soft']});
   // scoreboard (top centre)
   const bx=284,bw=232;const bar=(y,lab,n,N,col)=>{txt(ctx,lab+' '+n+'/'+N,400,y,{s:13*k,w:700,a:'center'});rr(ctx,bx,y+7,bw,9,4);ctx.fillStyle=PAL['cv-bg2'];ctx.fill();ctx.strokeStyle=PAL['line'];ctx.lineWidth=1;ctx.stroke();rr(ctx,bx,y+7,N?bw*n/N:0,9,4);ctx.fillStyle=col;ctx.fill();};
-  bar(ph?84:78,ph?'Needed working':'Needed traffic working',sc.goodOK,sc.goodN,PAL['s3']);bar(ph?140:126,ph?'Unwanted blocked':'Unwanted traffic blocked',sc.badOK,sc.badN,PAL['s2']);
-  if(!sandbox(sim)&&!ph)txt(ctx,'Goals met: '+sc.mOK+' of '+sc.missions.length,400,180,{s:13,c:PAL['cv-soft'],a:'center'});
-  if(ap&&!ph)txt(ctx,stateful(sim)?'Stateful: replies allowed automatically':'Stateless: replies must match a rule',400,200,{s:12,c:stateful(sim)?PAL['cv-soft']:PAL['s1'],a:'center',w:600});
+  bar(ph?84:78,ph?'Needed':'Needed traffic working',sc.goodOK,sc.goodN,PAL['s3']);bar(ph?140:126,ph?'Blocked':'Unwanted traffic blocked',sc.badOK,sc.badN,PAL['s2']);
+  if(!sandbox(sim)&&!ph)txt(ctx,'Goals met: '+sc.mOK+' of '+sc.missions.length,400,172,{s:13,c:PAL['cv-soft'],a:'center'});
+  if(ap&&!ph)txt(ctx,stateful(sim)?'Stateful firewall':'Stateless: replies need rules',400,192,{s:12,c:stateful(sim)?PAL['cv-soft']:PAL['s1'],a:'center',w:600});
   // last decision
-  if(lastRecent){const d=st.last.d;const lab=d.i===-2?'reply: tracked':d.i===-1?'implicit deny':'rule '+(d.i+1)+': '+d.act;pill(ctx,lab,400,fw[1]+fw[3]+20*k,d.act==='allow'?'#1b7339':'#b3261e','#fff',12*k);}
+  if(lastRecent){const d=st.last.d;const lab=d.i===-2?'reply: tracked':d.i===-1?'implicit deny':'rule '+(d.i+1)+': '+d.act;pill(ctx,lab,400,fw[1]-14*k,d.act==='allow'?'#1b7339':'#b3261e','#fff',12*k);}
   // packets
   st.pk.forEach(p=>{let pos;if(p.state==='go'){const a=p.pts[p.seg],b=p.pts[p.seg+1];pos=[lerp(a[0],b[0],p.u),lerp(a[1],b[1],p.u)];}else pos=p.state==='drop'?p.pts[p.fwi]:p.pts[p.pts.length-1];
     const r=(ph?7:5.5)*(p.reply?0.75:1)*(p.test?1.5:1),al=p.state==='go'?1:clamp(1-p.t/(p.test?2.5:0.9),0,1);ctx.globalAlpha=al;
     if(p.state==='drop'){ctx.strokeStyle=PAL['s1'];ctx.lineWidth=3.5;const s=8+(p.test?4:0);ctx.beginPath();ctx.moveTo(pos[0]-s,pos[1]-s);ctx.lineTo(pos[0]+s,pos[1]+s);ctx.moveTo(pos[0]+s,pos[1]-s);ctx.lineTo(pos[0]-s,pos[1]+s);ctx.stroke();}
     else{ctx.fillStyle=p.test?PAL['cv-ink']:svcCol(p.f.burst?0:p.port);ctx.beginPath();if(p.reply){ctx.rect(pos[0]-r,pos[1]-r,2*r,2*r);}else ctx.arc(pos[0],pos[1],r,0,6.29);ctx.fill();
       if(p.test){ctx.strokeStyle=PAL['cv-bg'];ctx.lineWidth=2;ctx.stroke();}
-      if(sim.p.ports&&!ph&&p.state==='go'&&!p.reply)txt(ctx,String(p.port),pos[0],pos[1]-r-4,{s:12,w:700,a:'center',c:PAL['cv-ink']});}
+      if(sim.p.ports&&!ph&&p.state==='go'&&!p.reply&&(p.seg===1||p.seg===4))txt(ctx,String(p.port),pos[0],pos[1]-r-4,{s:12,w:700,a:'center',c:PAL['cv-ink']});}
     ctx.globalAlpha=1;});
   // legend
   if(!ph){let x=36;const y=488;[[443,'443 web'],[53,'53 DNS'],[445,'445 files'],[587,'587 email'],[3389,'3389 remote desktop'],[0,'scan probe']].forEach(([p,l])=>{ctx.fillStyle=svcCol(p);ctx.beginPath();ctx.arc(x,y-4,5.5,0,6.29);ctx.fill();txt(ctx,l,x+10,y,{s:12,c:PAL['cv-soft']});x+=ctx.measureText(l).width+30;});
@@ -288,7 +290,8 @@ const FW={
     if(!rules.length)return '<b>No rules at all</b>, so every packet falls through to the implicit deny at the bottom. Nothing gets in or out: perfectly secure and completely useless.';
     const r0=rules[0];if(r0.act==='allow'&&r0.src==='any'&&r0.dst==='any'&&parsePorts(r0.port)==='any'&&r0.proto==='any')return '<b>Rule 1 allows everything</b>, so it matches every packet and no later rule is ever checked. The patron laptop reaches the staff file share'+(rules.length>1?', no matter what rules 2 to '+rules.length+' say.':'.')+' Move narrow rules above broad ones.';
     if(sandbox(sim))return sim.fw.trace&&!sim.fw.trace.same?'Your test packet was '+(sim.fw.trace.d.act==='allow'?'<b>allowed</b>':'<b>denied</b>')+' by '+(sim.fw.trace.d.i===-1?'the implicit deny':'rule '+(sim.fw.trace.d.i+1))+'. The firewall checked '+sim.fw.trace.steps.length+' rule'+(sim.fw.trace.steps.length===1?'':'s')+' to decide.':'Write rules, then <b>send a test packet</b> to see which rule decides it. Rules are checked top to bottom and the first match wins.';
-    if(!g('guestDns').works&&g('guestDns').f&&!g('guestWeb').needOK)return 'Patron web traffic is allowed, but <b>their DNS lookups are blocked</b>, so laptops cannot turn names like news.example.org into addresses and browsing fails. The DNS server lives in the Servers zone.';
+    const sl=sc.rs.find(r=>r.f.good&&r.reqOK&&!r.repOK);if(!stateful(sim)&&sl)return '<b>Stateless mode:</b> '+sl.f.name.toLowerCase()+' goes out, but the replies come back to a high-numbered port no rule allows, so they are dropped. A stateful firewall would remember the connection and let the reply in.';
+    if(!g('guestDns').reqOK&&!g('guestWeb').needOK)return 'Patron web traffic is allowed, but <b>their DNS lookups are blocked</b>, so laptops cannot turn names like news.example.org into addresses and browsing fails. The DNS server lives in the Servers zone.';
     if(!stateful(sim)&&!g('guestWeb').repOK)return '<b>Stateless mode:</b> requests go out, but the replies come back to a high-numbered port no rule allows, so they are dropped. A stateful firewall would remember the connection and let the reply in.';
     if(sc.mOK===sc.missions.length)return '<b>Every goal is met.</b> Needed traffic flows and unwanted traffic is dropped. '+(g('scan').reached?'The scan still reaches port 443, because the catalog site has to be public. That is why exposed services must be kept patched.':'');
     const bad=sc.rs.find(r=>!r.f.good&&!r.blocked),miss=sc.rs.find(r=>r.f.good&&!r.works);

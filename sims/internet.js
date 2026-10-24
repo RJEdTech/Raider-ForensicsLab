@@ -44,8 +44,8 @@ const BIO_LABEL={syn:'hi?',synack:'hi!',hack:'ok',ack:'got',dnsq:'?',dnsr:'IP',p
 function launch(sim,kind,src,dst,o){const st=sim.st;const pk=Object.assign({id:++st.pid,kind,src,dst,at:src,to:null,prog:0,lat:0,wait:0,ttl:64,job:st.job,born:st.now,hops:0,path:[src],lossAt:null},o||{});st.pk.push(pk);forward(sim,pk);return pk;}
 function forward(sim,pk){const nh=nextHops(sim,pk.at,pk.dst);if(!nh.length){drop(sim,pk,'noroute');return;}
   const to=pk.pin?nh[0]:nh[Math.floor(sim.st.r()*nh.length)];const T=topo(sim),key=lk(pk.at,to),sl=T.slow[key];
-  pk.to=to;pk.prog=0;pk.lat=wOf(pk.at,to);pk.wait=sl?sl.ms*(0.75+0.5*sim.st.r()):0;
-  const loss=(sim.p.mode==='send'?(+sim.p.loss||0)/100:0)+(sl?sl.loss:0);pk.lossAt=sim.st.r()<loss?pk.lat*(0.25+0.5*sim.st.r()):null;}
+  pk.to=to;pk.prog=0;pk.lat=wOf(pk.at,to);pk.slowQ=!!sl;pk.wait=(sl?sl.ms*(0.75+0.5*sim.st.r()):0)+(isRouter(pk.at)?4*sim.st.r():0);
+  const L=sim.p.mode==='send'?clamp((+sim.p.loss||0)/100,0,0.9):0,loss=(1-Math.pow(1-L,1/7))+(sl?sl.loss:0);pk.lossAt=sim.st.r()<loss?pk.lat*(0.25+0.5*sim.st.r()):null;}
 function drop(sim,pk,why){pk.dead=true;const st=sim.st;const pos=pkPos(pk);st.fx.push({x:pos[0],y:pos[1],t:1.2,why});
   if(why==='lost'||why==='noroute'||why==='black'){if(pk.kind==='data')st.S.lost++;}
   if(why!=='black'&&why!=='ttl')logOnce(sim,why==='noroute'?'A router had no route to '+(pk.dst==='S'?'the server':pk.dst==='D'?'the DNS resolver':'the laptop')+', so it dropped a packet.':(pk.kind==='data'?'Packet '+pk.seq+' was lost between '+pk.at+' and '+pk.to+'.':null));}
@@ -67,7 +67,7 @@ function deliver(sim,pk){const st=sim.st,S=st.S,k=pk.kind;if(pk.job!==st.job)ret
   if(k==='dnsr'){if(st.dnsDone)return;st.dnsDone=true;st.dnsWait=null;const dt=st.now-pk.t0;if(pk.ok){log(sim,'DNS: '+SITE+' → '+IP.S+' ('+fms(dt)+(pk.cached?', from the resolver’s cache':'')+')');st.dnsT=dt;if(st.after)st.after(true);}
     else{log(sim,'DNS: no answer for '+SITE+'. The resolver could not reach the site’s name server ('+fms(dt)+').');if(st.after)st.after(false);}return;}
   if(k==='syn'){launch(sim,'synack','S','L',{t0:pk.born});return;}
-  if(k==='synack'){if(S.est)return;S.est=true;S.rtt=st.now-pk.t0;S.rto=Math.max(25,2.2*S.rtt);log(sim,'TCP handshake done: SYN, SYN-ACK, ACK (round trip '+fms(S.rtt)+').');launch(sim,'hack','L','S',{});sendData(sim);return;}
+  if(k==='synack'){if(S.est||S.fail)return;S.est=true;S.rtt=st.now-pk.t0;S.rto=Math.max(25,2.2*S.rtt);log(sim,'TCP handshake done: SYN, SYN-ACK, ACK (round trip '+fms(S.rtt)+').');launch(sim,'hack','L','S',{});sendData(sim);return;}
   if(k==='hack')return;
   if(k==='data'){if(!S.got[pk.seq]){S.got[pk.seq]=true;S.arr.push(pk.seq);const maxB=S.arr.length>1?Math.max(...S.arr.slice(0,-1)):0;if(pk.seq<maxB){S.ooo++;S.oooSeq[pk.seq]=true;}S.lastHops=pk.path.filter(isRouter).length;}
     launch(sim,'ack','S','L',{seq:pk.seq});
@@ -84,21 +84,21 @@ function startSend(sim){const st=sim.st,N=clamp(Math.round(+sim.p.msgSize)||8,2,
   st.log=[];st.after2=null;st.status='Looking up '+SITE+'…';log(sim,'Maya presses Submit. First the laptop needs the server’s IP address.');
   st.after=ok=>{if(!ok){st.S.fail='Server not found (DNS)';st.status=st.S.fail;if(st.after2)st.after2(false);return;}st.status='Connecting (TCP handshake)…';syn(sim);};
   dnsQuery(sim,1);}
-function dnsQuery(sim,n){const st=sim.st;if(n===1)st.dnsDone=false;if(st.dnsDone)return;if(n>3){st.dnsDone=true;log(sim,'DNS: the resolver never answered (3 tries).');if(st.after)st.after(false);return;}
+function dnsQuery(sim,n){const st=sim.st;if(n===1)st.dnsDone=false;if(st.dnsDone)return;if(n>5){st.dnsDone=true;log(sim,'DNS: the resolver never answered (5 tries).');if(st.after)st.after(false);return;}
   if(n>1)log(sim,'No DNS answer yet. Asking again (try '+n+').');launch(sim,'dnsq','L','D',{});later(sim,topo(sim).dnsDown?420:160,()=>dnsQuery(sim,n+1));}
-function syn(sim){const st=sim.st,S=st.S;if(S.est||S.fail)return;if(S.synTries>=3){S.fail='Connection timed out';st.status=S.fail;log(sim,'No SYN-ACK after 3 tries: the connection timed out.');if(st.after2)st.after2(false);return;}
-  S.synTries++;if(S.synTries>1)log(sim,'No answer yet. Sending SYN again (try '+S.synTries+').');launch(sim,'syn','L','S',{});later(sim,90,()=>syn(sim));}
+function syn(sim){const st=sim.st,S=st.S;if(S.est||S.fail)return;if(S.synTries>=5){S.fail='Connection timed out';st.status=S.fail;log(sim,'No SYN-ACK after 5 tries: the connection timed out.');if(st.after2)st.after2(false);return;}
+  S.synTries++;if(S.synTries>1)log(sim,'No answer yet. Sending SYN again (try '+S.synTries+').');launch(sim,'syn','L','S',{});later(sim,450,()=>syn(sim));}
 function sendData(sim){const st=sim.st,S=st.S;st.status='Sending '+S.N+' packets…';for(let i=1;i<=S.N;i++)later(sim,(i-1)*1.6,()=>sendSeq(sim,i));later(sim,8,()=>retxCheck(sim));}
 function sendSeq(sim,i){const st=sim.st,S=st.S;if(S.acked[i]||S.done||S.fail)return;const re=!!S.sentAt[i];S.sentAt[i]=st.now;S.tries[i]=(S.tries[i]||0)+1;S.sent++;if(re){S.retx++;log(sim,'No ack for packet '+i+' yet, so the laptop sends it again.');}launch(sim,'data','L','S',{seq:i});}
-function retxCheck(sim){const st=sim.st,S=st.S;if(S.done||S.fail)return;let all=true;for(let i=1;i<=S.N;i++){if(S.acked[i])continue;all=false;if(S.sentAt[i]!==undefined&&st.now-S.sentAt[i]>S.rto){if(S.tries[i]>=7){S.fail='Connection lost';st.status=S.fail;log(sim,'Packet '+i+' failed 7 times. The connection gave up.');return;}sendSeq(sim,i);}}
+function retxCheck(sim){const st=sim.st,S=st.S;if(S.done||S.fail)return;let all=true;for(let i=1;i<=S.N;i++){if(S.acked[i])continue;all=false;if(S.sentAt[i]!==undefined&&st.now-S.sentAt[i]>S.rto){if(S.tries[i]>=12){S.fail='Connection lost';st.status=S.fail;log(sim,'Packet '+i+' failed 12 times. The connection gave up.');return;}sendSeq(sim,i);}}
   if(all&&!S.done&&S.respSent&&st.now-S.respAt>S.rto){S.respAt=st.now;launch(sim,'resp','S','L',{});}
   if(!all||!S.done)later(sim,6,()=>retxCheck(sim));}
 function startPing(sim){const st=sim.st;newJob(sim);st.S=blankS();st.ping={done:[],rtt:[],n:4};log(sim,'> ping '+IP.S);st.status='Pinging '+IP.S+'…';
-  for(let n=0;n<4;n++)later(sim,n*60,()=>{launch(sim,'echo','L','S',{n,pin:true});later(sim,500,()=>{if(!st.ping.done[n]){st.ping.done[n]='timeout';log(sim,'Request timed out.');}if(n===3)finishTest(sim,'ping');});});}
-function startTrace(sim){const st=sim.st;newJob(sim);st.S=blankS();st.trId++;st.trace=[];log(sim,'> traceroute '+IP.S);st.status='Tracing the route…';traceHop(sim,1,0);}
+  for(let n=0;n<4;n++)later(sim,n*60,()=>{launch(sim,'echo','L','S',{n,pin:true});later(sim,900,()=>{if(!st.ping.done[n]){st.ping.done[n]='timeout';log(sim,'Request timed out.');}if(n===3)finishTest(sim,'ping');});});}
+function startTrace(sim){const st=sim.st;newJob(sim);st.S=blankS();st.trId++;st.trace=[];log(sim,'> traceroute '+IP.S);st.status='Tracing the route…';if(sim.ui&&sim.ui.gm&&atLeast('honors')&&[...sim.ui.gm.options].some(o=>o.value==='trace')){sim.gMetric='trace';sim.ui.gm.value='trace';}traceHop(sim,1,0);}
 function traceHop(sim,h,miss){const st=sim.st;if(h>9){finishTest(sim,'trace');return;}const tr=st.trId;st.trace[h-1]={hop:h,who:null,rtts:[]};
   for(let j=0;j<3;j++)later(sim,j*0.6,()=>launch(sim,'probe','L','S',{ttl:h,hopN:h,pin:true,tr}));
-  const t0=st.now;const wait=()=>{if(tr!==st.trId)return;const H=st.trace[h-1];if(H.rtts.length>=3||st.now-t0>520){const line=h+'  '+(H.who?(H.who==='S'?'lunarlibrary.test ('+IP.S+')':H.who+' ('+ipOf(H.who)+')')+'  '+H.rtts.map(fms).join('  ')+(H.rtts.length<3?'  *':''):'*  *  *  (no reply)');log(sim,line);
+  const t0=st.now;const wait=()=>{if(tr!==st.trId)return;const H=st.trace[h-1];if(H.rtts.length>=3||st.now-t0>900){const line=h+'  '+(H.who?(H.who==='S'?'lunarlibrary.test ('+IP.S+')':H.who+' ('+ipOf(H.who)+')')+'  '+H.rtts.map(fms).join('  ')+(H.rtts.length<3?'  *':''):'*  *  *  (no reply)');log(sim,line);
       if(H.who==='S'){finishTest(sim,'trace');return;}const m=H.who?0:miss+1;if(m>=2){log(sim,'Two hops in a row gave no reply. Stopping.');finishTest(sim,'trace');return;}traceHop(sim,h+1,m);return;}later(sim,4,wait);};later(sim,4,wait);}
 function startLookup(sim){const st=sim.st;newJob(sim);st.S=blankS();log(sim,'> nslookup '+SITE);st.status='Looking up the name…';st.after=ok=>{finishTest(sim,'dns');};dnsQuery(sim,1);}
 function startLoad(sim){startSend(sim);const st=sim.st;st.S.N=6;st.after2=ok=>{finishTest(sim,'load');};}
@@ -126,7 +126,7 @@ function modeChanged(sim){const st=sim.st;newJob(sim);st.log=[];st.status='';st.
 const blankS=()=>({N:0,got:[],acked:[],arr:[],ooo:0,oooSeq:{},sent:0,retx:0,lost:0,tDone:null,on:false,lastHops:0,fail:''});
 
 const NET={
-  id:'internet',hash:'internet',apUnit:20,order:1,tab:'How the internet moves data',kind:'Simulation',
+  id:'internet',hash:'internet',apUnit:20,order:1,prereq:['binary'],next:['firewall','logs','pubkey'],tab:'How the internet moves data',kind:'Simulation',
   card:'Send an essay across a network of routers, cut links and watch packets reroute, then troubleshoot a site that won’t load.',
   title:'How the internet moves data',
   lede:{bio:'Your message is chopped into numbered packets. Each one finds its own way through a web of routers, and the server puts them back in order. Break a link and watch the network route around it.',
@@ -138,7 +138,7 @@ const NET={
     {id:'mode',label:'Explore',type:'seg',def:'case',noTrial:true,options:[{v:'case',l:'Investigate'},{v:'send',l:'Send a message'},{v:'dns',l:'DNS lookup'}]},
     {id:'caseSel',label:'Help desk ticket',type:'select',def:0,modes:['case'],noTrial:true,options:[{v:0,l:'Ticket 1: “The site won’t load”'},{v:1,l:'Ticket 2: “Connection timed out”'},{v:2,l:'Ticket 3: “It’s really slow”'}],onChange(sim){modeChanged(sim);}},
     {id:'msgSize',label:'Essay size',type:'range',min:4,max:16,step:1,def:8,unit:' packets',modes:['send'],help:'Big messages are split into more packets.'},
-    {id:'loss',label:'Packet loss on every wire',type:'range',min:0,max:30,step:5,def:0,unit:'%',lvl:'honors',modes:['send']},
+    {id:'loss',label:'Packet loss',type:'range',min:0,max:30,step:5,def:0,unit:'%',lvl:'honors',modes:['send'],help:'Chance that a packet is lost somewhere on its trip across the network.'},
     {id:'fault',label:'Break something',type:'select',def:'none',modes:['send'],help:'Or click a router or wire on the map. Click again to fix it.',options:[{v:'none',l:'Nothing broken'},{v:'L:R5-R7',l:'Cut the R5–R7 wire'},{v:'N:R5',l:'Break router R5'},{v:'N:R9',l:'Break router R9'},{v:'N:R3',l:'Break router R3',lvl:'honors'},{v:'N:R10',l:'Break router R10',lvl:'honors'}],onChange(sim){sim.st.dcache={};}},
     {id:'headers',label:'Show packet headers',type:'toggle',def:false,lvl:'ap',modes:['send'],noTrial:true},
     {id:'cache',label:'Resolver already has the answer cached',type:'toggle',def:false,lvl:'honors',modes:['dns']},
@@ -171,7 +171,7 @@ const NET={
   ],
   graphs:[{id:'arr',label:'Arrival order of the packets',custom:true},{id:'trace',label:'Traceroute: round-trip time to each hop',lvl:'honors',custom:true}],defaultGraph:'arr',
   plot(sim,ctx,box,id){const st=sim.st,msg=s=>txt(ctx,s,box.cw/2,box.ch/2,{s:15,c:PAL['muted'],a:'center',b:'middle'});
-    if(id==='arr'){const S=st.S;if(!S.arr.length){msg(sim.p.mode==='send'?'Send the essay to see the order packets arrive in.':'Switch to Send a message, then send the essay.');return;}
+    if(id==='arr'){const S=st.S;if(!S.arr.length){msg(sim.p.mode==='dns'?'Switch to Send a message, then send the essay.':sim.p.mode==='case'?'Load the site to see the order packets arrive in.':'Send the essay to see the order packets arrive in.');return;}
       const n=Math.max(S.N,S.arr.length);const ax=axes(ctx,box,{xmin:0,xmax:n+1,ymin:0,ymax:n+1,xl:'Arrival (1st, 2nd, …)',yl:'Packet number',xd:0,yd:0});
       ctx.setLineDash([5,4]);ctx.strokeStyle=PAL['muted'];ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ax.X(0),ax.Y(0));ctx.lineTo(ax.X(n+1),ax.Y(n+1));ctx.stroke();ctx.setLineDash([]);
       S.arr.forEach((q,i)=>{ctx.fillStyle=S.oooSeq[q]?serColor(3):serColor(1);ctx.beginPath();ctx.arc(ax.X(i+1),ax.Y(q),6,0,6.29);ctx.fill();});
@@ -234,7 +234,7 @@ const NET={
      explain:'The model is sending with the R5–R7 wire cut. Routers drop that wire from their routes and use R4–R7 or R8–R9 instead, so the essay arrives. Many paths (redundancy) is why one cut rarely stops the internet.'},
     {lvl:'bio',instant:true,q:'Before Maya’s laptop can send anything to www.lunarlibrary.test, what does it need?',choices:['The server’s IP address, from a DNS lookup','Maya’s password','A direct wire to the server'],correct:0,set:{mode:'dns',cache:false,authDown:false},act(s){startDns(s);},
      explain:'Routers move packets by number, not by name. The DNS lookup now running asks the resolver, which asks the root, .test and lunarlibrary.test servers until it gets 203.0.113.80.'},
-    {lvl:'honors',instant:true,q:'Every wire now loses 20% of packets. Does Maya’s essay still arrive complete?',choices:['No, about 20% of it is missing','Yes, the server tells the laptop what it got, and TCP resends the missing packets','Yes, because routers make copies of every packet'],correct:1,set:{mode:'send',fault:'none',loss:20,msgSize:8},act(s){startSend(s);},
+    {lvl:'honors',instant:true,q:'Now 20% of packets get lost on the way. Does Maya’s essay still arrive complete?',choices:['No, about 20% of it is missing','Yes, the server tells the laptop what it got, and TCP resends the missing packets','Yes, because routers make copies of every packet'],correct:1,set:{mode:'send',fault:'none',loss:20,msgSize:8},act(s){startSend(s);},
      explain:'Watch the Resent by TCP tile climb. The server acknowledges each packet it gets; any packet without an ack after a timeout is sent again. The essay arrives whole, just later.'},
     {lvl:'honors',instant:true,q:'For Ticket 2, traceroute shows hops 1 to '+last+' answering, then only * * *. What does that point to?',choices:['Maya’s Wi-Fi is down','Something at hop '+(last+1)+' (the next router) is not passing traffic','The DNS lookup failed'],correct:1,set:{mode:'case',caseSel:1},act(s){startTrace(s);},
      explain:'The model is running that traceroute now. Hops 1–'+last+' reply, so the path works that far. The next router on the path, R10, never answers and nothing beyond it does either, so R10 is the likely failure. If only the server were down, R10 would still reply.'},
@@ -289,8 +289,8 @@ function drawNet(sim,ctx,k,t){const p=sim.p,st=sim.st,T=topo(sim),hon=atLeast('h
   // routers
   ORDER.forEach(n=>{if(!isRouter(n))return;const a=NODES[n],R=routerR(k),down=T.nd.has(n);ctx.fillStyle=down?'#8a8a90':'#3f5f7f';ctx.beginPath();ctx.arc(a.x,a.y,R,0,6.29);ctx.fill();
     txt(ctx,n,a.x,a.y+1,{s:12*k,w:700,c:'#fff',a:'center',b:'middle'});if(down){ctx.strokeStyle=PAL['s1'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(a.x-R*0.7,a.y-R*0.7);ctx.lineTo(a.x+R*0.7,a.y+R*0.7);ctx.moveTo(a.x+R*0.7,a.y-R*0.7);ctx.lineTo(a.x-R*0.7,a.y+R*0.7);ctx.stroke();}
-    const q=st.pk.filter(x=>!x.dead&&x.at===n&&x.wait>0).length;if(q>1&&!down){pill(ctx,'queue '+q,a.x,a.y-R-14*k,PAL['s4'],'#fff',12*k);}
-    if(hopOf[n])pill(ctx,'hop '+hopOf[n],a.x+R+6+16*k,a.y+R*0.9,PAL['card'],PAL['cv-ink'],12*k);});
+    const q=st.pk.filter(x=>!x.dead&&x.at===n&&x.wait>0&&x.slowQ).length;if(q>1&&!down){pill(ctx,'queue '+q,a.x,a.y-R-14*k,PAL['s4'],'#fff',12*k);}
+    if(hopOf[n]){ctx.strokeStyle=PAL['s4'];ctx.lineWidth=3;ctx.beginPath();ctx.arc(a.x,a.y,R+4,0,6.29);ctx.stroke();pill(ctx,String(hopOf[n]),a.x-R-2,a.y-R-2,PAL['s4'],'#fff',12*k);}});
   // hosts
   const L=NODES.L;rr(ctx,L.x-26,L.y-20,52,32,4);ctx.fillStyle='#3a3e45';ctx.fill();rr(ctx,L.x-22,L.y-16,44,24,2);ctx.fillStyle='#9cc4e8';ctx.fill();ctx.fillStyle='#3a3e45';rr(ctx,L.x-32,L.y+12,64,7,3);ctx.fill();
   txt(ctx,small?'Laptop':'Maya’s laptop',6,L.y+42,{s:12*k,w:700});
@@ -300,10 +300,10 @@ function drawNet(sim,ctx,k,t){const p=sim.p,st=sim.st,T=topo(sim),hon=atLeast('h
   txt(ctx,small?'Resolver':'DNS resolver',D.x,D.y+30+8*k,{s:12*k,w:700,a:'center'});
   if(st.dnsWait&&!RM){const a=t*5;ctx.strokeStyle=PAL['s5'];ctx.lineWidth=3;ctx.beginPath();ctx.arc(D.x,D.y,26,a,a+4);ctx.stroke();}
   // packets
-  const tracked=ap&&p.headers?(st.pk.find(q=>!q.dead&&q.kind==='data'&&q.to)||st.pk.find(q=>!q.dead&&(q.kind==='syn'||q.kind==='hack'))):null;
-  st.pk.forEach(pk=>{if(pk.dead)return;const [x,y]=pkPos(pk);let [col,lab]=KIND[pk.kind]||['#888',''];if(pk.kind==='data')lab=String(pk.seq);if(!hon&&BIO_LABEL[pk.kind])lab=BIO_LABEL[pk.kind];
+  const tracked=ap&&p.headers&&p.mode==='send'?(st.pk.find(q=>!q.dead&&q.kind==='data'&&q.to)||st.pk.find(q=>!q.dead&&(q.kind==='syn'||q.kind==='hack'))):null;
+  st.pk.forEach(pk=>{if(pk.dead)return;const [x,y]=pkPos(pk);let [col,lab]=KIND[pk.kind]||['#888',''];if(pk.kind==='data')lab=String(pk.seq);if(pk.kind==='probe')lab='TTL '+pk.ttl;if(!hon&&BIO_LABEL[pk.kind])lab=BIO_LABEL[pk.kind];
     if(pk.kind==='ack'&&!hon)lab='';const s=12*k;ctx.font='700 '+s+'px '+MONO;const w=Math.max(16,ctx.measureText(lab).width+8),hh=s+6;
-    let ox=0,oy=0;if(pk.wait>0){const i=st.pk.filter(q=>!q.dead&&q.at===pk.at&&q.wait>0).indexOf(pk);ox=-(i%4)*6-routerR(k);oy=-(Math.floor(i/4))*6;}
+    let ox=0,oy=0;if(pk.wait>0&&pk.slowQ){const i=st.pk.filter(q=>!q.dead&&q.at===pk.at&&q.wait>0&&q.slowQ).indexOf(pk);ox=-(i%4)*6-routerR(k);oy=-(Math.floor(i/4))*6;}
     rr(ctx,x-w/2+ox,y-hh/2+oy,w,hh,4);ctx.fillStyle=col;ctx.fill();if(pk===tracked){ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=2.5;ctx.stroke();}
     if(lab)mt(ctx,lab,x+ox,y+oy+1,{s,w:700,c:'#fff',a:'center',b:'middle'});});
   st.fx.forEach(f=>{ctx.globalAlpha=clamp(f.t/0.6,0,1);mt(ctx,'✕',f.x,f.y,{s:18*k,w:800,c:PAL['s1'],a:'center',b:'middle'});ctx.globalAlpha=1;});

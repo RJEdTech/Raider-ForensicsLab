@@ -306,7 +306,7 @@ function drawDrop(sim,ctx,k,t){const p=sim.p,st=sim.st,m=dropModel(p),hon=atLeas
   txt(ctx,'θ = '+p.angle+'°',IP.x+10,IP.y-36,{s:13*k,w:700,c:PAL['s4']});
   // falling drop or splash
   if(st.ph==='fall'){const tf=fallTime(p),f=clamp(st.a/tf,0,1),y=lerp(ytop+2,IP.y-5,f*f);ctx.fillStyle=BLOOD;ctx.beginPath();ctx.ellipse(dx,y,4.2,5.2,0,0,TAU);ctx.fill();}
-  else{const f=st.ph==='spread'?clamp(st.b/0.35,0,1):1,len=Math.min(40,m.W*0.9+m.T*0.4)*f;ctx.strokeStyle=BLOOD;ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(IP.x-ux*len*0.25,IP.y-uy*len*0.25);ctx.lineTo(IP.x+ux*len,IP.y+uy*len);ctx.stroke();ctx.lineCap='butt';}
+  else{const f=st.ph==='spread'?clamp(st.b/0.35,0,1):1,len=Math.min(40,m.W*0.9+m.T*0.4)*f;ctx.strokeStyle=BLOOD;ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();const back=p.angle>=80?0.5:0.25,fw=p.angle>=80?0.5:1;ctx.moveTo(IP.x-ux*len*back,IP.y-uy*len*back);ctx.lineTo(IP.x+ux*len*fw,IP.y+uy*len*fw);ctx.stroke();ctx.lineCap='butt';}
   if(p.angle<85)arrow(ctx,IP.x+ux*30+nx*20,IP.y+uy*30+ny*20,IP.x+ux*70+nx*20,IP.y+uy*70+ny*20,PAL['cv-soft'],2);
   // top view
   panel(ctx,RP,'Top view of the paper',k,'enlarged · ruler in mm');

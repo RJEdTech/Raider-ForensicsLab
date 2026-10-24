@@ -26,7 +26,7 @@ const FIB={
   rayon:{l:'Rayon',cls:'Regenerated: made from wood pulp',look:'smooth rod with lengthwise lines',d:18,np:1.539,nv:1.519,near:'does not shrink away',inF:'burns fast',out:'keeps glowing',smell:'burning paper',res:'little soft ash',melt:false,col:[234,234,230]},
   nylon:{l:'Nylon',cls:'Synthetic',look:'smooth, glassy rod',d:20,np:1.582,nv:1.519,near:'melts and shrinks away',inF:'burns slowly and melts',out:'usually goes out',smell:'like celery',res:'hard cream bead',melt:true,bead:'#e8dfc4',col:[236,236,232]},
   polyester:{l:'Polyester',cls:'Synthetic',look:'smooth rod with tiny specks',d:18,np:1.720,nv:1.537,near:'melts and shrinks away',inF:'melts, black smoke',out:'usually goes out',smell:'sweet chemical smell',res:'hard black bead',melt:true,bead:'#2a2a2e',col:[236,236,236]},
-  acrylic:{l:'Acrylic',cls:'Synthetic',look:'smooth rod, faint lines',d:22,np:1.511,nv:1.514,near:'melts and shrinks away',inF:'burns fast, sputters, melts',out:'keeps burning',smell:'harsh, acrid',res:'hard black lumpy bead',melt:true,bead:'#2a2a2e',col:[238,236,232]}};
+  acrylic:{l:'Acrylic',cls:'Synthetic',look:'smooth rod, faint lines',d:22,np:1.511,nv:1.514,near:'melts and shrinks away',inF:'burns fast, sputters, melts',out:'keeps burning',smell:'harsh, acrid',res:'hard black lump',melt:true,bead:'#2a2a2e',col:[238,236,232]}};
 const FCOL={red:[196,40,52],blue:[44,82,188],green:[34,136,72]};
 const bire=f=>FIB[f].np-FIB[f].nv;
 const retard=f=>Math.abs(bire(f))*FIB[f].d*1000; // nm
@@ -86,12 +86,12 @@ function drawHairShaft(ctx,H,view,ppu,x0,x1,seed){const D=H.d*ppu,r=rng(seed),h=
   if(view==='scales'){ // a scale cast: the cuticle's imprint, seen as lines
     ctx.fillStyle='#e9e6dc';ctx.fillRect(x0,-h,x1-x0,D);ctx.strokeStyle='#8a8478';ctx.lineWidth=1.5;ctx.strokeRect(x0,-h,x1-x0,D);
     ctx.save();ctx.beginPath();ctx.rect(x0,-h,x1-x0,D);ctx.clip();ctx.strokeStyle='#5d574d';ctx.lineWidth=1.3;
-    const step=H.sc==='cor'?Math.max(7,D*0.5):H.sc==='spin'?Math.max(9,D*0.32):Math.max(6,Math.min(11,D*0.11));
+    const step=H.sc==='cor'?Math.max(7,D*0.5):H.sc==='spin'?Math.max(9,D*0.32):H.sc==='imb'?8.5:Math.max(7,Math.min(12,D*0.11));
     for(let x=x0-20,i=0;x<x1+20;x+=step*(0.85+0.3*r()),i++){
       if(H.sc==='imb'||H.sc==='imbw'){const amp=H.sc==='imb'?1.6:Math.max(3,D*0.05),ph=r()*TAU,sl=D*0.18;ctx.beginPath();
         for(let y=-h;y<=h+0.1;y+=Math.max(1.5,D/24)){const xx=x+sl*(y/h)+amp*Math.sin(y/D*TAU*(H.sc==='imb'?1.2:2.4)+ph);y===-h?ctx.moveTo(xx,y):ctx.lineTo(xx,y);}ctx.stroke();}
       else if(H.sc==='cor'){ctx.beginPath();const n=Math.max(3,Math.round(D/9));for(let j=0;j<=n;j++){const y=-h+D*j/n,xx=x+(j%2?step*0.35:0)+Math.abs(y)/h*step*0.5;j?ctx.lineTo(xx,y):ctx.moveTo(xx,y);}ctx.stroke();}
-      else{const rows=3;for(let j=0;j<rows;j++){const yc=-h+D*(j+0.5)/rows+(i%2?D/rows/2:0),pw=D/rows*0.55;if(Math.abs(yc)>h)continue;ctx.beginPath();ctx.moveTo(x-step*0.2,yc-pw);ctx.quadraticCurveTo(x+step*0.55,yc-pw*0.3,x+step*0.95,yc);ctx.quadraticCurveTo(x+step*0.55,yc+pw*0.3,x-step*0.2,yc+pw);ctx.stroke();}}}
+      else{const rows=D>36?2:1;for(let j=0;j<=rows;j++){const yc=-h+D*j/rows+(i%2?D/rows/2:0),pw=D/rows*0.62;if(Math.abs(yc)>h+pw)continue;ctx.beginPath();ctx.moveTo(x-step*0.3,yc-pw);ctx.quadraticCurveTo(x+step*0.7,yc-pw*0.55,x+step*1.25,yc);ctx.quadraticCurveTo(x+step*0.7,yc+pw*0.55,x-step*0.3,yc+pw);ctx.closePath();ctx.fillStyle='#ece9df';ctx.fill();ctx.stroke();}}}
     ctx.restore();return;}
   // transmitted light: cortex, pigment, medulla
   ctx.fillStyle=rgb(cort,H.treat==='natural'?0.55:0.75);ctx.fillRect(x0,-h,x1-x0,D);
@@ -108,15 +108,18 @@ function drawHairShaft(ctx,H,view,ppu,x0,x1,seed){const D=H.d*ppu,r=rng(seed),h=
   else if(H.med==='multi'){ctx.globalAlpha=0.88;const rows=3,ch=2*M/rows,s=Math.max(6,ch*1.1);for(let j=0;j<rows;j++)for(let x=x0+(j%2)*s/2;x<x1;x+=s){rr(ctx,x,-M+j*ch+0.8,s-2,ch-1.6,1.5);ctx.fill();}ctx.globalAlpha=1;}
   else if(H.med==='lattice'){ctx.fillStyle='rgba(60,52,44,.55)';ctx.fillRect(x0,-M,x1-x0,2*M);ctx.strokeStyle=DK;ctx.lineWidth=1.6;const cs=Math.max(8,M*0.28);
     for(let j=0,y=-M;y<M;y+=cs*0.86,j++)for(let x=x0+(j%2)*cs/2;x<x1;x+=cs){ctx.beginPath();for(let a=0;a<6;a++){const ang=a*TAU/6+Math.PI/6,px=x+Math.cos(ang)*cs*0.55,py=clamp(y+Math.sin(ang)*cs*0.55,-M,M);a?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();ctx.stroke();}}}
-function drawRoot(ctx,H,ppu,xr,x1,k){const D=H.d*ppu,h=D/2,col=H.treat==='bleached'?[232,214,160]:H.col;
-  ctx.fillStyle=rgb(col,0.6);ctx.strokeStyle=rgb(mix(col,[30,20,10],0.4));ctx.lineWidth=1.6;
-  if(H.root==='shed'){ // telogen: club-shaped, keratinized, no tissue
-    ctx.beginPath();ctx.moveTo(x1,-h);ctx.lineTo(xr+D*0.9,-h);ctx.quadraticCurveTo(xr+D*0.3,-h*1.05,xr,-h*0.55);ctx.arc(xr+h*0.2,0,h*0.6,Math.PI*1.2,Math.PI*0.8,true);ctx.quadraticCurveTo(xr+D*0.3,h*1.05,xr+D*0.9,h);ctx.lineTo(x1,h);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.fillStyle='rgba(240,230,200,.8)';ctx.beginPath();ctx.ellipse(xr+h*0.25,0,h*0.45,h*0.4,0,0,TAU);ctx.fill();}
-  else{ // anagen: elongated, pigmented, with root-sheath tissue
-    ctx.fillStyle='rgba(214,190,170,.55)';ctx.beginPath();ctx.ellipse(xr+D*1.1,0,D*1.5,h*1.7,0,0,TAU);ctx.fill();ctx.strokeStyle='rgba(150,120,100,.8)';ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=rgb(col,0.75);ctx.strokeStyle=rgb(mix(col,[30,20,10],0.4));ctx.beginPath();ctx.moveTo(x1,-h);ctx.lineTo(xr+D*1.2,-h);ctx.bezierCurveTo(xr+D*0.4,-h,xr+D*0.1,-h*0.5,xr-D*0.15,0);ctx.bezierCurveTo(xr+D*0.1,h*0.5,xr+D*0.4,h,xr+D*1.2,h);ctx.lineTo(x1,h);ctx.closePath();ctx.fill();ctx.stroke();}}
-
+function drawRoot(ctx,H,ppu,xr,x1,k){const D=H.d*ppu,h=D/2,col=H.treat==='bleached'?[232,214,160]:H.col,ed=rgb(mix(col,[30,20,10],0.45)),r=rng(5);
+  if(H.root==='shed'){ // telogen: club-shaped, keratinized, no tissue, little pigment at the bulb
+    ctx.fillStyle=rgb(col,0.55);ctx.strokeStyle=ed;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x1,-h);ctx.lineTo(xr+D*2.2,-h);ctx.bezierCurveTo(xr+D*1.4,-h*0.8,xr+D*0.9,-h*1.25,xr+D*0.45,-h*1.25);
+    ctx.arc(xr+D*0.45,0,h*1.25,-Math.PI/2,Math.PI/2,true);ctx.bezierCurveTo(xr+D*0.9,h*1.25,xr+D*1.4,h*0.8,xr+D*2.2,h);ctx.lineTo(x1,h);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(246,238,214,.9)';ctx.beginPath();ctx.ellipse(xr+D*0.5,0,D*0.85,h*0.95,0,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(160,140,110,.8)';ctx.lineWidth=1;for(let i=0;i<6;i++){const y=(i-2.5)*h*0.3;ctx.beginPath();ctx.moveTo(xr-D*0.15,y);ctx.lineTo(xr+D*0.9,y*0.6);ctx.stroke();}
+    ctx.fillStyle=rgb(mix(col,[30,20,10],0.5),0.8);for(let i=0;i<40;i++){const x=xr+D*1.6+r()*(x1-xr-D*1.6),y=(r()*2-1)*h*0.8;ctx.beginPath();ctx.ellipse(x,y,2,0.9,0,0,TAU);ctx.fill();}}
+  else{ // anagen: elongated, densely pigmented root wrapped in root-sheath tissue
+    ctx.fillStyle='rgba(222,196,176,.6)';ctx.strokeStyle='rgba(150,118,96,.85)';ctx.lineWidth=1.4;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(xr+D*4.2,-h*1.1);ctx.bezierCurveTo(xr+D*2.5,-h*1.9,xr+D*0.4,-h*2.1,xr-D*0.35,-h*0.6);ctx.quadraticCurveTo(xr-D*0.55,0,xr-D*0.35,h*0.6);ctx.bezierCurveTo(xr+D*0.4,h*2.1,xr+D*2.5,h*1.9,xr+D*4.2,h*1.1);ctx.closePath();ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(120,90,80,.65)';for(let i=0;i<34;i++){const x=xr-D*0.2+r()*D*4,y=(r()*2-1)*h*1.7;if(Math.abs(y)<h*1.05)continue;ctx.beginPath();ctx.arc(x,y,1.8,0,TAU);ctx.fill();}
+    ctx.fillStyle=rgb(col,0.7);ctx.strokeStyle=ed;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x1,-h);ctx.lineTo(xr+D*2.4,-h);ctx.bezierCurveTo(xr+D*1.5,-h*1.05,xr+D*0.8,-h*1.15,xr+D*0.2,-h*0.6);ctx.quadraticCurveTo(xr-D*0.05,0,xr+D*0.2,h*0.6);ctx.bezierCurveTo(xr+D*0.8,h*1.15,xr+D*1.5,h*1.05,xr+D*2.4,h);ctx.lineTo(x1,h);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle=rgb(mix(col,[30,20,10],0.6),0.85);for(let i=0;i<90;i++){const x=xr+r()*(x1-xr),dens=x<xr+D*2.4?1:0.35;if(r()>dens)continue;const y=(r()*2-1)*h*0.8;ctx.beginPath();ctx.ellipse(x,y,2,0.9,0,0,TAU);ctx.fill();}}}
 /* Fiber, drawn along +x, centered at y=0. mode: 'long' | 'polar' */
 function drawFiber(ctx,F,c,ppu,x0,x1,mode,seed,y0){const f=FIB[F],D=f.d*ppu,h=D/2,r=rng(seed);let fill=c?mix(f.col,FCOL[c],0.75):f.col,edge=mix(fill,[20,20,24],0.45);
   if(mode==='polar'){const ic=interferenceColor(retard(F));fill=ic;edge=mix(ic,[0,0,0],0.3);}
@@ -150,7 +153,7 @@ function interferenceColor(G){const band=(a,b)=>{let s=0,n=0;for(let l=a;l<=b;l+
 /* ---------- layout ---------- */
 const FX=232,FY=246,FR=176,PX=438,PW=350;
 function field(ctx,dark){ctx.fillStyle=LENS;ctx.beginPath();ctx.arc(FX,FY,FR+9,0,TAU);ctx.fill();ctx.fillStyle=dark?'#08080a':FIELD;ctx.beginPath();ctx.arc(FX,FY,FR,0,TAU);ctx.fill();}
-function clipField(ctx,half){ctx.beginPath();if(half==='L')ctx.rect(FX-FR,FY-FR,FR,2*FR);else if(half==='R')ctx.rect(FX,FY-FR,FR,2*FR);ctx.save();ctx.beginPath();ctx.arc(FX,FY,FR,0,TAU);ctx.clip();if(half){ctx.beginPath();half==='L'?ctx.rect(FX-FR,FY-FR,FR,2*FR):ctx.rect(FX,FY-FR,FR,2*FR);ctx.clip();}}
+function clipField(ctx,half){ctx.save();ctx.beginPath();ctx.arc(FX,FY,FR,0,TAU);ctx.clip();if(half){ctx.beginPath();half==='L'?ctx.rect(FX-FR,FY-FR,FR,2*FR):ctx.rect(FX,FY-FR,FR,2*FR);ctx.clip();}}
 const HPPU=0.78,FPPU=2.0; // px per µm: hair at 400× (field ≈ 450 µm), fibers at about 1000× (field ≈ 180 µm)
 function scaleBar(ctx,um,ppu,k,dark){const L=um*ppu,x=FX-L/2,y=FY+FR-30;ctx.strokeStyle=dark?'#f2f2f2':'#222';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+L,y);ctx.stroke();
   txt(ctx,um+' µm',FX,y-8,{s:12*k,w:700,a:'center',c:dark?'#f2f2f2':'#222'});}
@@ -199,7 +202,7 @@ const HF={
     {id:'burnres',label:'Burn test',unit:'',lvl:'bio',text:true,modes:['fiber'],get:s=>{const st=s.st;if(st.burn===null||st.burnF!==s.p.fiber)return 'Not run yet';return st.burn<4?'Burning…':FIB[st.burnF].smell+'; '+FIB[st.burnF].res;}},
     {id:'bire',label:'Birefringence n∥ − n⊥',unit:'',lvl:'ap',min:-0.01,max:0.2,d:3,modes:['fiber'],get:s=>bire(s.p.fiber)},
     {id:'ret',label:'Retardation Γ = Δn × t',unit:'nm',lvl:'ap',min:0,max:null,d:0,modes:['fiber'],get:s=>retard(s.p.fiber)},
-    {id:'cmp',label:'This comparison',unit:'',lvl:'bio',text:true,modes:['case'],noTrial:true,get:s=>{const p=s.p;return compareText(p.cs,p.item,p.suspect);}},
+    {id:'cmp',label:'This comparison',unit:'',lvl:'bio',text:true,modes:['case'],noTrial:true,get:s=>{const p=s.p;return p.call==='unsure'?'Make your call first':compareText(p.cs,p.item,p.suspect);}},
     {id:'made',label:'Calls made',unit:'',lvl:'bio',text:true,modes:['case'],noTrial:true,get:s=>{const c=calls(s),p=s.p;let n=0,ok=0;['hair','fiber'].forEach(it=>[0,1,2].forEach(i=>{const v=c[p.cs+'|'+it+'|'+i];if(v&&v!=='unsure'){n++;if((v==='consistent')===truth(p.cs,it,i))ok++;}}));return n+' of 6 ('+ok+' supported)';}}
   ],
   graphs:[{id:'migraph',label:'Medullary index by species',lvl:'bio',custom:true},{id:'bgraph',label:'Birefringence by fiber',lvl:'ap',custom:true}],
@@ -210,25 +213,25 @@ const HF={
     const ks=Object.keys(SP),vals=ks.map(k=>SP[k].mi);const ax=axes(ctx,box,{xmin:0,xmax:ks.length,ymin:0,ymax:1,xcats:ks.map(k=>k==='human'?'Human':SP[k].l),yl:'medullary index',yd:1});
     bars(ctx,ax,vals,{colors:ks.map(k=>k===sim.p.species?PAL['s1']:PAL['g-axis']),d:2});
     ctx.setLineDash([5,4]);ctx.strokeStyle=PAL['muted'];ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(box.L,ax.Y(1/3));ctx.lineTo(box.L+box.W,ax.Y(1/3));ctx.stroke();ctx.setLineDash([]);
-    txt(ctx,'1/3: human below, most animals above',box.L+box.W-4,ax.Y(1/3)-6,{s:12,c:PAL['muted'],a:'right'});},
+    txt(ctx,'1/3',box.L+6,ax.Y(1/3)-6,{s:12,w:700,c:PAL['muted']});},
   infoPanel(sim){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap');
     if(p.mode==='case'){const C=CASES[p.cs],c=calls(sim);
-      const cell=(it,i)=>{const v=c[p.cs+'|'+it+'|'+i]||'unsure';if(v==='unsure')return '<td>not called</td>';const ok=(v==='consistent')===truth(p.cs,it,i);return `<td>${v}${ok?' ✓':' <b>(check again)</b>'}</td>`;};
-      const rows=C.sus.map((s,i)=>`<tr${i===p.suspect?' style="font-weight:700"':''}><td>${s.n}</td><td>${s.hl}: ${hairName(s.hair)}</td>${cell('hair',i)}<td>${s.fl}: ${fibName(s.fiber)}</td>${cell('fiber',i)}</tr>`).join('');
-      return `<h3>${C.l} (fictional)</h3><p>${C.story}</p><p><b>Evidence:</b> ${hairName(C.hair)}; ${fibName(C.fiber)} fiber.</p><div class="tbl-wrap"><table><thead><tr><th>Suspect</th><th>Known hair</th><th>Your call</th><th>Known fiber</th><th>Your call</th></tr></thead><tbody>${rows}</tbody></table></div>
+      const cell=(it,i)=>{const v=c[p.cs+'|'+it+'|'+i]||'unsure';if(v==='unsure')return '<td>?</td>';const ok=(v==='consistent')===truth(p.cs,it,i);return `<td>${v}${ok?' ✓':' <b>(look again)</b>'}</td>`;};
+      const rows=C.sus.map((s,i)=>`<tr${i===p.suspect?' style="font-weight:700"':''}><td>${s.n}</td><td>${s.hl}</td>${cell('hair',i)}<td>${s.fl}</td>${cell('fiber',i)}</tr>`).join('');
+      return `<h3>${C.l} (fictional)</h3><p>${C.story}</p><p><b>Evidence:</b> one hair and one ${C.fiber.c} fiber from the scene. Identify them by comparing.</p><div class="tbl-wrap"><table><thead><tr><th>Suspect</th><th>Known hair</th><th>Call</th><th>Known fiber</th><th>Call</th></tr></thead><tbody>${rows}</tbody></table></div>
         <p class="help">Compare one feature at a time: ${p.item==='hair'?'species (medulla, scales), then color and treatment.':'fiber type (shape'+(hon?', cross section':'')+(ap?', interference color':'')+'), then color.'} ${hon?'Hair and fibers are class evidence: a match means “consistent with,” never “came from.”':'A ✓ means your call agrees with the evidence.'}</p>`;}
     if(p.mode==='fiber'){const ks=Object.keys(FIB);const rows=ks.map(k=>{const f=FIB[k];return `<tr${k===p.fiber?' style="font-weight:700"':''}><td>${f.l}</td><td>${f.near}</td><td>${f.inF}</td><td>${f.out}</td><td>${f.smell}</td><td>${f.res}</td>${ap?`<td>${f.np.toFixed(3)} / ${f.nv.toFixed(3)}</td>`:''}</tr>`;}).join('');
       return `<h3>Burn test decision table</h3><div class="tbl-wrap"><table><thead><tr><th>Fiber</th><th>Near the flame</th><th>In the flame</th><th>Taken out</th><th>Smell</th><th>Residue</th>${ap?'<th>n∥ / n⊥</th>':''}</tr></thead><tbody>${rows}</tbody></table></div><p class="help">Plant fibers (cellulose) burn like paper. Animal fibers (protein) smell like burning hair and go out. Synthetics melt and leave a hard bead. Labs burn only a known sample, never the one evidence fiber.</p>`;}
     const ks=Object.keys(SP);const rows=ks.map(k=>{const s=SP[k];return `<tr${k===p.species?' style="font-weight:700"':''}><td>${s.l}</td><td>${SCS[s.sc]}</td><td>${MEDS[s.med]}</td>${hon?`<td>${s.mi.toFixed(2)}</td>`:''}<td>${s.pig==='even'?'spread evenly, more toward the edge':'packed toward the center'}</td>${ap?`<td>${s.d}</td>`:''}</tr>`;}).join('');
     return `<h3>Hair identification key</h3><div class="tbl-wrap"><table><thead><tr><th>Source</th><th>Scales</th><th>Medulla</th>${hon?'<th>Medullary index</th>':''}<th>Pigment</th>${ap?'<th>Width (µm)</th>':''}</tr></thead><tbody>${rows}</tbody></table></div><p class="help">Rule of thumb: a human head hair’s medulla is absent or broken and under 1/3 of the shaft width. Most animal hairs have a continuous or patterned medulla wider than 1/2.</p>`;},
   narrate(sim){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap');
-    if(p.mode==='case'){const C=CASES[p.cs],s=C.sus[p.suspect],L=LET[p.suspect];
-      if(p.item==='hair'){const e=C.hair,k=s.hair;if(e.sp!==k.sp)return 'The evidence is '+hairName(e)+'; '+s.n+'’s known sample is '+hairName(k)+'. <b>A different species excludes this sample</b>: compare the medulla and scales side by side.';
-        if(e.sp==='human'&&!hairSame(e,k))return 'Both are human hairs, but the evidence is '+hairName(e)+' and '+s.n+'’s is '+hairName(k)+'. <b>Color and treatment differ, so this sample is excluded.</b>';
-        return 'The evidence and '+s.n+'’s '+s.hl+' agree in every feature you can see. <b>That makes them consistent, not a proven match</b>: many '+(e.sp==='human'?'people':e.sp+'s')+' have hair like this.'+(hon?' Only DNA could individualize it.':'');}
-      const e=C.fiber,k=s.fiber;if(e.f!==k.f)return 'The evidence fiber is '+FIB[e.f].l.toLowerCase()+' ('+FIB[e.f].look+'), but '+s.n+'’s '+s.fl+' is '+FIB[k.f].l.toLowerCase()+'. <b>Same color is not enough: the fiber type differs, so it is excluded.</b>';
-      if(e.c!==k.c)return 'Same fiber type ('+FIB[e.f].l.toLowerCase()+'), but the evidence is '+e.c+' and '+s.n+'’s '+s.fl+' is '+k.c+'. <b>A different dye excludes it.</b>';
-      return s.n+'’s '+s.fl+' matches the evidence in type and color. <b>Consistent</b>: it could have come from this garment, or from any other garment made of the same fiber and dye.';}
+    if(p.mode==='case'){const C=CASES[p.cs],s=C.sus[p.suspect],call=p.call;
+      if(call==='unsure'){const d=p.item==='hair'?[descHair(C.hair,p.hview),descHair(s.hair,p.hview)]:[descFiber(C.fiber,p.fview),descFiber(s.fiber,p.fview)];
+        return 'Left, the scene '+p.item+': '+d[0]+'. Right, '+s.n+'’s '+(p.item==='hair'?s.hl:s.fl)+': '+d[1]+'. <b>Compare them feature by feature, then make your call.</b>';}
+      const ok=(call==='consistent')===truth(p.cs,p.item,p.suspect);let why;
+      if(p.item==='hair'){const e=C.hair,k=s.hair;why=e.sp!==k.sp?'The scene hair is '+hairName(e)+' and the known sample is '+hairName(k)+': <b>a different species excludes it.</b>':e.sp==='human'&&!hairSame(e,k)?'Both are human, but the scene hair is '+hairName(e)+' and the known one is '+hairName(k)+': <b>color and treatment differ, so it is excluded.</b>':'Both are '+hairName(e)+' and agree in every feature you can see. <b>That makes them consistent, not a proven match</b>: many '+(e.sp==='human'?'people':e.sp+'s')+' have hair like this.'+(atLeast('honors')?' Only DNA could individualize it.':'');}
+      else{const e=C.fiber,k=s.fiber;why=e.f!==k.f?'The scene fiber is '+FIB[e.f].l.toLowerCase()+' ('+FIB[e.f].look+'), but the '+s.fl+' is '+FIB[k.f].l.toLowerCase()+'. <b>Same color is not enough: the fiber type differs, so it is excluded.</b>':e.c!==k.c?'Same fiber type, but the scene fiber is '+e.c+' and the '+s.fl+' is '+k.c+'. <b>A different dye excludes it.</b>':'The '+s.fl+' matches in type and color. <b>Consistent</b>: it could have come from this garment, or from any other made of the same fiber and dye.';}
+      return (ok?'Your call holds up. ':'Look again. ')+why;}
     if(p.mode==='fiber'){const f=FIB[p.fiber],st=sim.st;
       if(st.burn!==null&&st.burnF===p.fiber&&st.burn<4)return st.burn<1.3?'Moving the fiber toward the flame: it '+f.near+'.':'In the flame it '+f.inF+'. '+(f.melt?'<b>It melts because it is a thermoplastic polymer.</b>':'<b>It chars instead of melting</b>, like other natural fibers.');
       if(p.fview==='polar')return 'Between crossed polarizers the '+f.l.toLowerCase()+' fiber glows with a color set by its retardation, Γ = Δn × t = '+Math.round(retard(p.fiber))+' nm. <b>'+(retard(p.fiber)<150?'Low retardation: it stays nearly dark.':retard(p.fiber)>2000?'High retardation: the colors wash out to a pale, pearly white.':'Different polymers show different colors.')+'</b>';
@@ -292,12 +295,15 @@ const HF={
   thumbSetup(sim){sim.p.mode='hair';sim.p.species='dog';},thumbFrames:10
 };
 function syncLight(sim){const key=BioLab.level+sim.p.mode+sim.p.item+sim.p.species+sim.p.hview;if(sim._sk!==key){sim._sk=key;syncMode(sim);}}
+function descHair(h,view){const S=SP[h.sp];if(view==='scales')return 'scales '+SCS[S.sc];
+  return (h.sp==='human'?(h.tr==='bleached'?'pale yellow, few pigment grains':h.hc==='dark'?'dark brown pigment':'brown pigment')+', ':'')+(S.med==='frag'?'a thin, broken medulla':'a '+MEDS[S.med]+' medulla over half the width');}
+function descFiber(f,view){const F=FIB[f.f];if(view==='polar')return 'Γ ≈ '+Math.round(retard(f.f)/10)*10+' nm';if(view==='cross')return {cotton:'bean-shaped',wool:'round with a scaly edge',silk:'triangular',rayon:'round with a notched edge',nylon:'round',polyester:'round',acrylic:'dog-bone shaped'}[f.f]+', '+f.c;return f.c+', '+F.look;}
 function compareText(cs,item,i){return (truth(cs,item,i)?'Consistent: every feature agrees':'Excluded: '+(item==='hair'?(CASES[cs].hair.sp!==CASES[cs].sus[i].hair.sp?'different species':'different color or treatment'):(CASES[cs].fiber.f!==CASES[cs].sus[i].fiber.f?'different fiber type':'different color')));}
 
 /* ---------- hair lab ---------- */
 function hairView(ctx,H,view,half,seed,measureOn,k){const ppu=HPPU;
   ctx.save();ctx.translate(FX,FY);ctx.rotate(-0.1);
-  if(view==='root'){const pr=0.42;ctx.scale(1,1);drawRoot(ctx,Object.assign({},H,{d:H.d}),pr,-FR*0.55,FR+20,k);}
+  if(view==='root')drawRoot(ctx,H,0.42,-FR*0.62,FR+30,k);
   else drawHairShaft(ctx,H,view,ppu,-FR-30,FR+30,seed);
   if(measureOn&&view==='medulla'){const m=measure(H),x=half==='R'?60:half==='L'?-60:70,div=5*ppu,n=Math.ceil(H.d/5)+8;
     ctx.strokeStyle='#1d3f8a';ctx.lineWidth=1.2;const y0=-n*div/2;ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x,y0+n*div);ctx.stroke();
@@ -307,7 +313,7 @@ function hairView(ctx,H,view,half,seed,measureOn,k){const ppu=HPPU;
 function drawHairLab(sim,ctx,k,t){const p=sim.p,H=curHair(sim),S=SP[p.species],hon=atLeast('honors'),ap=atLeast('ap');
   field(ctx,false);clipField(ctx);hairView(ctx,H,p.hview,null,11,hon&&p.measure,k);
   scaleBar(ctx,p.hview==='root'?200:50,p.hview==='root'?0.42:HPPU,k);ctx.restore();
-  txt(ctx,(p.species==='human'?'Human head hair':S.l+' hair')+' · '+(p.hview==='root'?'100×':'400×'),20,30,{s:15*k,w:700});
+  txt(ctx,(p.species==='human'?'Human head hair':S.l+' hair')+' · '+(p.hview==='root'?'200×':'400×'),20,30,{s:15*k,w:700});
   // right panel
   panel(ctx,44,392);let y=58;
   if(hon&&p.hview!=='root'){const cx=PX+58,cy=y+50,R=42;ctx.fillStyle=rgb(H.col,0.45);ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.fill();ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=3;ctx.stroke();
@@ -324,7 +330,7 @@ function drawHairLab(sim,ctx,k,t){const p=sim.p,H=curHair(sim),S=SP[p.species],h
   if(p.hview!=='root'){const v=verdictHair(H),hum=S.mi<1/3;pill(ctx,k>1.35?(hum?'Human pattern':'Animal pattern'):v,PX+PW/2,416,hum?PAL['s2']:PAL['s4'],'#fff',13*k);}}
 
 /* ---------- fiber lab ---------- */
-function fiberView(ctx,F,c,view,half,seed,k){if(view==='cross'){const R=FIB[F].d*FPPU*0.5*1.4,pts=[[-0.5,-0.35],[0.15,-0.5],[0.55,-0.05],[-0.2,0.15],[0.3,0.45],[-0.55,0.4],[-0.05,-0.05]];
+function fiberView(ctx,F,c,view,half,seed,k){if(view==='cross'){const R=FIB[F].d*FPPU*0.5,pts=half?[[-0.3,-0.55],[0.35,-0.25],[-0.35,0.05],[0.3,0.35],[-0.2,0.62]]:[[-0.5,-0.35],[0.15,-0.5],[0.55,-0.05],[-0.2,0.15],[0.3,0.45],[-0.55,0.4],[-0.05,-0.15]];
     pts.forEach((q,i)=>{const x=FX+q[0]*FR*(half?0.55:0.9)+(half==='L'?-FR*0.45:half==='R'?FR*0.45:0),y=FY+q[1]*FR*0.9;crossSection(ctx,F,x,y,R*(0.9+0.2*((i*37)%5)/5),c);});return;}
   ctx.save();ctx.translate(FX,FY);ctx.rotate(-0.12);
   const ys=view==='polar'?[-60,40]:[-55,50];ys.forEach((y0,i)=>{ctx.save();ctx.rotate(i?0.22:0);drawFiber(ctx,F,c,FPPU,-FR-30,FR+30,view,seed+i,y0);ctx.restore();});
@@ -336,26 +342,26 @@ function drawFiberLab(sim,ctx,k,t){const p=sim.p,F=p.fiber,f=FIB[F],ap=atLeast('
   // burn test panel
   panel(ctx,44,392);const st=sim.st,bt=st.burn!==null&&st.burnF===F?st.burn:null;
   txt(ctx,'Burn test (known sample)',PX+14,70,{s:14*k,w:700});
-  const fx=PX+PW/2,fy=k>1.35?232:206;
+  const fx=PX+PW/2,fy=k>1.35?212:232;
   // flame
   const fl=(x,y,s,a)=>{ctx.save();ctx.globalAlpha=a;ctx.fillStyle='#f39a1e';ctx.beginPath();ctx.moveTo(x,y-46*s);ctx.bezierCurveTo(x+22*s,y-14*s,x+18*s,y+10*s,x,y+12*s);ctx.bezierCurveTo(x-18*s,y+10*s,x-22*s,y-14*s,x,y-46*s);ctx.fill();
     ctx.fillStyle='#ffd34d';ctx.beginPath();ctx.moveTo(x,y-26*s);ctx.bezierCurveTo(x+11*s,y-6*s,x+9*s,y+8*s,x,y+9*s);ctx.bezierCurveTo(x-9*s,y+8*s,x-11*s,y-6*s,x,y-26*s);ctx.fill();ctx.restore();};
   ctx.fillStyle=PAL['line'];rr(ctx,fx-26,fy+16,52,14,4);ctx.fill();const flick=RM?1:1+0.06*Math.sin(t*14);fl(fx,fy+6,flick,1);
-  const tt=bt===null?0:bt,dip=tt<1.3?tt/1.3:tt<2.6?1:Math.max(0,1-(tt-2.6)/0.8);const ty=fy-118+dip*70;
+  const tt=bt===null?0:bt,dip=tt<1.3?tt/1.3:tt<2.6?1:Math.max(0,1-(tt-2.6)/0.8);const ty=fy-100+dip*44;
   // tweezers
-  ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(fx-60,ty-36);ctx.lineTo(fx-4,ty);ctx.moveTo(fx-56,ty-42);ctx.lineTo(fx+2,ty-6);ctx.stroke();
+  ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(fx-42,ty-22);ctx.lineTo(fx-4,ty);ctx.moveTo(fx-38,ty-28);ctx.lineTo(fx+2,ty-6);ctx.stroke();
   // fiber tuft
   const burned=bt===null?0:clamp((tt-1.3)/2.2,0,1)*(f.melt?0.75:(f.out==='goes out by itself'?0.55:1)),shrink=f.melt&&bt!==null?clamp(tt/1.3,0,1):0;
-  const len=40*(1-burned)*(1-0.3*shrink);const tc=mix(f.col,[60,50,40],0.3);ctx.strokeStyle=rgb(tc);ctx.lineWidth=1.6;
+  const len=54*(1-burned)*(1-0.3*shrink);const tc=mix(f.col,[60,50,40],0.45);ctx.strokeStyle=rgb(tc);ctx.lineWidth=2.2;
   for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(fx,ty);const curl=(f.near.includes('away')?shrink*14+(bt!==null&&!f.melt?clamp(tt/1.3,0,1)*10:0):0);ctx.quadraticCurveTo(fx+i*3+Math.sign(i||1)*curl,ty+len*0.5,fx+i*5+Math.sign(i||1)*curl*0.6,ty+len);ctx.stroke();}
   if(bt!==null&&tt>1.3){const end=ty+len;if(f.melt){ctx.fillStyle=f.bead;ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=1;ctx.beginPath();ctx.arc(fx,end,4+5*burned,0,TAU);ctx.fill();ctx.stroke();}
     else{ctx.fillStyle=f.res.includes('gray')||f.res.includes('little')?'#9a9a9a':'#3a3634';for(let i=0;i<7;i++){ctx.beginPath();ctx.arc(fx+((i*13)%9-4)*1.6,end+((i*7)%5),2.2,0,TAU);ctx.fill();}}
     if(tt>2.6&&tt<4&&(f.out.startsWith('keeps')))fl(fx,end+4,0.35,0.9);
     if(F==='polyester'&&tt>1.3&&tt<3.4){ctx.fillStyle='rgba(60,60,64,.35)';for(let i=0;i<6;i++){const yy=end-12-((t*40+i*16)%70);ctx.beginPath();ctx.arc(fx+Math.sin(t*3+i)*8,yy,5+i,0,TAU);ctx.fill();}}}
   // results lines
-  const ry=fy+42,L=[];
+  const ry=fy+40,L=[];
   if(bt===null)L.push({t:'Press “Run the burn test.”',s:13,c:PAL['cv-soft']});
-  else{L.push({t:'Near: '+f.near,s:12.5});if(tt>1.3)L.push({t:'In: '+f.inF,s:12.5});if(tt>2.6)L.push({t:'Out: '+f.out,s:12.5});if(tt>3.6)L.push({t:'Smell: '+f.smell+' · '+f.res,s:12.5,w:700});}
+  else{L.push({t:'Near: '+f.near,s:12.5});if(tt>1.3)L.push({t:'In: '+f.inF,s:12.5});if(tt>2.6)L.push({t:'Out: '+f.out,s:12.5});if(tt>3.6){L.push({t:'Smell: '+f.smell,s:12.5,w:700});L.push({t:'Residue: '+f.res,s:12.5,w:700});}}
   textBlock(ctx,L,PX+14,ry,PW-28,432,k);}
 
 /* ---------- case: comparison microscope ---------- */
@@ -365,15 +371,17 @@ function drawCase(sim,ctx,k,t){const p=sim.p,C=CASES[p.cs],S=C.sus[p.suspect],ho
   else{clipField(ctx,'L');fiberView(ctx,C.fiber.f,C.fiber.c,p.fview,'L',3,k);ctx.restore();clipField(ctx,'R');fiberView(ctx,S.fiber.f,S.fiber.c,p.fview,'R',9,k);ctx.restore();}
   ctx.strokeStyle=LENS;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(FX,FY-FR);ctx.lineTo(FX,FY+FR);ctx.stroke();
   const phn=k>1.35;txt(ctx,phn?'Scene':'Scene evidence',FX-FR*0.5,FY-FR-14,{s:13*k,w:700,a:'center'});txt(ctx,phn?S.n:S.n+': '+(p.item==='hair'?S.hl:S.fl),FX+FR*0.5,FY-FR-14,{s:13*k,w:700,a:'center'});
-  txt(ctx,phn?'Comparison microscope':'Comparison microscope · '+(p.item==='hair'?'400×':'about 1000×'),20,30,{s:15*k,w:700});
-  // suspect cards
-  const ch=124,gap=8,c=calls(sim);
-  C.sus.forEach((s,i)=>{const y=44+i*(ch+gap),sel=i===p.suspect;ctx.fillStyle=PAL['card'];rr(ctx,PX,y,PW,ch,10);ctx.fill();ctx.strokeStyle=sel?PAL['rj']:PAL['line'];ctx.lineWidth=sel?3:1;ctx.stroke();
-    const hv=c[p.cs+'|hair|'+i]||'unsure',fv=c[p.cs+'|fiber|'+i]||'unsure';
-    txt(ctx,s.n,PX+14,y+26*Math.min(k,1.2),{s:14*k,w:700});
-    const ls=12.5*k,line=(lab,val,yy,cv)=>{txt(ctx,lab,PX+14,yy,{s:ls,c:PAL['cv-ink']});const col=cv==='consistent'?PAL['s3']:cv==='excluded'?PAL['s1']:PAL['cv-soft'];txt(ctx,cv==='unsure'?'?':cv==='consistent'?'consistent':'excluded',PX+PW-12,yy,{s:ls,w:700,a:'right',c:col});};
-    line(phn?'Hair: '+(s.hair.sp==='human'?'human':s.hair.sp):'Hair: '+s.hl,'',y+26*Math.min(k,1.2)+ls*1.45,hv);
-    line(phn?'Fiber: '+s.fiber.c:'Fiber: '+s.fl,'',y+26*Math.min(k,1.2)+ls*2.85,fv);});}
+  if(!phn)txt(ctx,'Comparison microscope · '+(p.item==='hair'?'400×':'about 1000×'),20,30,{s:15*k,w:700});
+  // evidence card and suspect cards
+  const c=calls(sim),eh=phn?78:58;ctx.fillStyle=PAL['card2'];rr(ctx,PX,44,PW,eh,10);ctx.fill();ctx.strokeStyle=PAL['line'];ctx.lineWidth=1;ctx.stroke();
+  txt(ctx,'Scene evidence',PX+14,44+18*Math.min(k,1.3),{s:13*k,w:700});txt(ctx,'1 hair and 1 '+C.fiber.c+' fiber',PX+14,44+18*Math.min(k,1.3)+15*k,{s:12.5*k,c:PAL['cv-soft']});
+  const gap=8,y0=44+eh+gap,ch=(436-y0-2*gap)/3;
+  C.sus.forEach((s,i)=>{const y=y0+i*(ch+gap),sel=i===p.suspect;ctx.fillStyle=PAL['card'];rr(ctx,PX,y,PW,ch,10);ctx.fill();ctx.strokeStyle=sel?PAL['rj']:PAL['line'];ctx.lineWidth=sel?3:1;ctx.stroke();
+    const hv=c[p.cs+'|hair|'+i]||'unsure',fv=c[p.cs+'|fiber|'+i]||'unsure',ls=12.5*k,y1=y+20*Math.min(k,1.3);
+    txt(ctx,s.n,PX+14,y1,{s:14*k,w:700});
+    const line=(lab,yy,cv)=>{txt(ctx,lab,PX+14,yy,{s:ls,c:PAL['cv-ink']});const col=cv==='consistent'?PAL['s3']:cv==='excluded'?PAL['s1']:PAL['cv-soft'];txt(ctx,cv==='unsure'?'?':cv,PX+PW-12,yy,{s:ls,w:700,a:'right',c:col});};
+    line(phn?'Hair: '+(s.hair.sp==='human'?'human':s.hair.sp):'Hair: '+s.hl,y1+ls*1.4,hv);
+    line(phn?'Fiber: '+s.fiber.c:'Fiber: '+s.fl,y1+ls*2.75,fv);});}
 
 HF.onLevel=syncMode;
 const C0=HF.controls;

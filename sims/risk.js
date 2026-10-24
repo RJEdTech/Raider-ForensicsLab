@@ -4,25 +4,25 @@ const {clamp,lerp,rng,rr,txt,pill,atLeast,PAL,FONT,RM}=BioLab.h;
 
 /* ---------- the case: Pinecrest Bakery (fictional) ---------- */
 const THREATS=[
-  {id:'phish',name:'Phishing email',short:'Phishing',asset:'Shop email and the order inbox',cia:'C',aro:2,sle:3000,
+  {id:'phish',name:'Phishing email',short:'Phishing',ashort:'Shop email',asset:'Shop email and the order inbox',cia:'C',aro:2,sle:3000,
    desc:'A fake “supplier invoice” email tricks a staff member into typing the shop email password on a look-alike page. The attacker reads customer emails and sends fake invoices.',
    avoid:{text:'Stop using email for the business',cost:40000}},
-  {id:'laptop',name:'Stolen laptop',short:'Laptop',asset:'Two staff laptops (payroll file)',cia:'C',aro:0.2,sle:6000,
+  {id:'laptop',name:'Stolen laptop',short:'Laptop',ashort:'Laptops',asset:'Two staff laptops (payroll file)',cia:'C',aro:0.2,sle:6000,
    desc:'A laptop left in a car overnight is stolen. It holds the payroll spreadsheet with staff names and addresses.',
    avoid:{text:'Laptops never leave the shop',cost:800}},
-  {id:'guess',name:'Weak password guessed',short:'Password',asset:'Online-order website admin',cia:'I',aro:0.5,sle:4000,
+  {id:'guess',name:'Weak password guessed',short:'Password',ashort:'Website',asset:'Online-order website admin',cia:'I',aro:0.5,sle:4000,
    desc:'The website admin password is “Pinecrest2024”. A guessing bot gets in and changes prices and pickup times on orders.',
    avoid:{text:'Shut down online ordering',cost:15000}},
-  {id:'ransom',name:'Unpatched software',short:'Ransomware',asset:'Order computer and recipe files',cia:'A',aro:0.25,sle:40000,
+  {id:'ransom',name:'Unpatched software',short:'Ransomware',ashort:'Order PC',asset:'Order computer and recipe files',cia:'A',aro:0.25,sle:40000,
    desc:'The order computer has skipped updates for a year. Ransomware gets in through an old, known flaw and locks every file.',
    avoid:{text:'Go back to paper orders',cost:9000}},
-  {id:'power',name:'Power outage',short:'Power',asset:'Ovens, register and router',cia:'A',aro:1.5,sle:1500,
+  {id:'power',name:'Power outage',short:'Power',ashort:'Ovens and register',asset:'Ovens, register and router',cia:'A',aro:1.5,sle:1500,
    desc:'A storm knocks out power for most of a day. The register, card reader and ovens all stop, and dough spoils.',
    avoid:{text:'No realistic way to avoid storms',cost:null}},
-  {id:'insider',name:'Insider mistake',short:'Insider',asset:'Customer list (480 loyalty members)',cia:'C',aro:0.5,sle:8000,
+  {id:'insider',name:'Insider mistake',short:'Insider',ashort:'Customer list',asset:'Customer list (480 loyalty members)',cia:'C',aro:0.5,sle:8000,
    desc:'An employee means to email one customer but attaches the whole loyalty list and sends it to the wrong address.',
    avoid:{text:'Stop keeping a customer email list',cost:6000}},
-  {id:'skimmer',lvl:'honors',name:'Card skimmer',short:'Skimmer',asset:'Payment terminal',cia:'C',aro:0.08,sle:60000,
+  {id:'skimmer',lvl:'honors',name:'Card skimmer',short:'Skimmer',ashort:'Card reader',asset:'Payment terminal',cia:'C',aro:0.08,sle:60000,
    desc:'Someone swaps the card reader for a look-alike that copies cards. It runs for weeks before the bank notices.',
    avoid:{text:'Take cash only',cost:50000}}
 ];
@@ -204,8 +204,8 @@ function bindPanel(sim,el){
 function wrap(ctx,s,maxW,size,w){ctx.font=(w||400)+' '+size+'px '+FONT;const words=String(s).split(' '),lines=[];let cur='';
   words.forEach(wd=>{const tryS=cur?cur+' '+wd:wd;if(ctx.measureText(tryS).width>maxW&&cur){lines.push(cur);cur=wd;}else cur=tryS;});if(cur)lines.push(cur);return lines;}
 function badge(ctx,x,y,r,n,fill,k){ctx.beginPath();ctx.arc(x,y,r,0,6.29);ctx.fillStyle=fill;ctx.fill();txt(ctx,String(n),x,y+1,{s:Math.max(12*k,r*1.05),w:700,c:'#fff',a:'center',b:'middle'});}
-function header(sim,ctx,k,title){const ev=evaluate(sim),bud=budgetOf(sim),ph=k>1.4;
-  txt(ctx,title,20,34,{s:17*k,w:700});
+function header(sim,ctx,k,title,short){const ev=evaluate(sim),bud=budgetOf(sim),ph=k>1.4;
+  txt(ctx,ph&&short?short:title,20,34,{s:17*k,w:700});
   const bw=ph?210:230,bx=780-bw,by=40;txt(ctx,(ph?'':'Spent ')+money(ev.spend)+' of '+money(bud),780,30,{s:13*k,w:600,a:'right',c:ev.spend>bud?PAL['s1']:PAL['cv-soft']});
   rr(ctx,bx,by,bw,8,4);ctx.fillStyle=PAL['cv-bg2'];ctx.fill();ctx.strokeStyle=PAL['line'];ctx.lineWidth=1;ctx.stroke();
   rr(ctx,bx,by,bw*clamp(bud>0?ev.spend/bud:ev.spend>0?1:0,0,1),8,4);ctx.fillStyle=ev.spend>bud?PAL['s1']:PAL['s3'];ctx.fill();}
@@ -223,7 +223,7 @@ function layoutMarks(sim,k){const g=matrixGeom(k),marks=matrixMarks(sim),cells={
     list.forEach((m,j)=>{const row=Math.floor(j/per),inRow=Math.min(per,n-row*per),col=j%per;const cx=g.gx+(m.I-0.5)*g.cw,cy=g.gy+(5-m.L+0.5)*g.ch;
       m.x=cx+(col-(inRow-1)/2)*r*2.25;m.y=cy+(row-(rows-1)/2)*r*2.2;m.r=r;});});return marks;}
 function drawMatrix(sim,ctx,k){const g=matrixGeom(k),pl=plan(sim),ts=threatsFor(sim,pl);
-  header(sim,ctx,k,'Risk matrix: likelihood × impact');
+  header(sim,ctx,k,'Risk matrix: likelihood × impact','Risk matrix');
   for(let L=1;L<=5;L++)for(let I=1;I<=5;I++){const x=g.gx+(I-1)*g.cw,y=g.gy+(5-L)*g.ch,b=band(L*I);ctx.globalAlpha=0.2;ctx.fillStyle=b.c;ctx.fillRect(x,y,g.cw,g.ch);ctx.globalAlpha=1;
     ctx.strokeStyle=PAL['line'];ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,g.cw,g.ch);if(!g.ph)txt(ctx,String(L*I),x+g.cw-5,y+14,{s:12,c:PAL['cv-soft'],a:'right'});}
   for(let L=1;L<=5;L++){const y=g.gy+(5-L+0.5)*g.ch;txt(ctx,g.ph?String(L):LWORD[L],g.gx-8,y,{s:12*k,c:PAL['cv-soft'],a:'right',b:'middle',w:600});}
@@ -269,23 +269,23 @@ function stepLayers(sim,dt){const st=sim.st;if(sim.p.view!=='layers')return;cons
     if(d.u>=1){d.u=0;d.seg++;if(d.seg>=d.path.length-1){d.done=0.001;st.hist.push(d.stopAt<0?1:0);if(st.hist.length>40)st.hist.shift();if(d.stopAt<0)st.hit=0.5;}}});
   st.dots=st.dots.filter(d=>d.done<1.1);st.hit=Math.max(0,(st.hit||0)-dt);}
 function drawLayers(sim,ctx,k){const st=sim.st,G=layerGeom(sim),t=G.t,row=G.row,hon=atLeast('honors'),ph=k>1.4;
-  header(sim,ctx,k,'Layers of defense: '+t.short);
+  header(sim,ctx,k,'Layers of defense: '+t.short,'Layers: '+t.short);
   // threat card
   rr(ctx,14,150,150,200,12);ctx.fillStyle=PAL['card'];ctx.fill();ctx.strokeStyle=PAL['line'];ctx.lineWidth=1.5;ctx.stroke();
-  badge(ctx,40,176,14,row.n,CIAF[t.cia],k);txt(ctx,'Threat',62,177,{s:12*k,w:700,c:PAL['cv-soft'],b:'middle'});
-  wrap(ctx,t.name,130,14*k,700).slice(0,3).forEach((l,i)=>txt(ctx,l,26,210+i*18*k,{s:14*k,w:700}));
-  wrap(ctx,freq(row.aro),130,12*k).slice(0,3).forEach((l,i)=>txt(ctx,l,26,300+i*15*k-(ph?18:0),{s:12*k,c:PAL['cv-soft']}));
+  badge(ctx,40,176,14,row.n,CIAF[t.cia],k);if(!ph)txt(ctx,'Threat',62,177,{s:12*k,w:700,c:PAL['cv-soft'],b:'middle'});
+  wrap(ctx,ph?t.short:t.name,128,14*k,700).slice(0,3).forEach((l,i)=>txt(ctx,l,26,214+i*18*k,{s:14*k,w:700}));
+  if(!ph)wrap(ctx,freq(row.aro),130,12*k).slice(0,3).forEach((l,i)=>txt(ctx,l,26,300+i*15*k,{s:12*k,c:PAL['cv-soft']}));
   // asset card
   const hitC=st.hit>0;rr(ctx,640,150,146,200,12);ctx.fillStyle=hitC?'rgba(193,20,48,.18)':PAL['card'];ctx.fill();ctx.strokeStyle=hitC?PAL['s1']:PAL['line'];ctx.lineWidth=hitC?3:1.5;ctx.stroke();
-  txt(ctx,'Asset',652,174,{s:12*k,w:700,c:PAL['cv-soft']});wrap(ctx,t.asset,124,13*k,700).slice(0,4).forEach((l,i)=>txt(ctx,l,652,198+i*17*k,{s:13*k,w:700}));
-  txt(ctx,money(row.s2)+' per hit',652,338,{s:12*k,c:G.cut.length?PAL['s3']:PAL['cv-soft'],w:600});
+  txt(ctx,'Asset',652,174,{s:12*k,w:700,c:PAL['cv-soft']});wrap(ctx,ph?t.ashort:t.asset,124,13*k,700).slice(0,4).forEach((l,i)=>txt(ctx,l,652,198+i*17*k,{s:13*k,w:700}));
+  wrap(ctx,money(row.s2)+' per hit',126,12*k,600).forEach((l,i,a)=>txt(ctx,l,652,338-(a.length-1-i)*15*k,{s:12*k,c:G.cut.length?PAL['s3']:PAL['cv-soft'],w:600}));
   // cushions (detective and corrective controls)
   G.cut.forEach((c,i)=>{const x=590+i*16;rr(ctx,x,140,12,220,6);ctx.fillStyle=PAL['s3'];ctx.globalAlpha=0.55;ctx.fill();ctx.globalAlpha=1;});
   if(G.cut.length){const lab=G.cut.map(c=>c.short+' −'+Math.round(c.cut[t.id]*100)+'%');lab.forEach((l,i)=>txt(ctx,l,630,380+i*16*k+8*k,{s:12*k,w:700,c:PAL['s3'],a:'right'}));}
   // slices
   G.pre.forEach((c,i)=>{const x=G.xs[i],hs=G.holes[i];ctx.fillStyle=PAL['cv-head'];rr(ctx,x-12,120,24,260,8);ctx.fill();
     hs.forEach(h=>{ctx.fillStyle=PAL['cv-bg'];rr(ctx,x-7,h[0],14,h[1]-h[0],7);ctx.fill();});
-    const up=i%2===0||G.pre.length<3;const y=up?100:404;txt(ctx,c.short,x,y,{s:12*k,w:700,a:'center'});txt(ctx,'stops '+Math.round(c.stop[t.id]*100)+'%',x,y+(up?-15:15)*k,{s:12*k,c:PAL['cv-soft'],a:'center'});});
+    const up=i%2===0||G.pre.length<3;const y=up?104:398+12*k;txt(ctx,c.short,x,y,{s:12*k,w:700,a:'center'});if(!ph)txt(ctx,'stops '+Math.round(c.stop[t.id]*100)+'%',x,y+(up?-15:15),{s:12,c:PAL['cv-soft'],a:'center'});});
   if(!G.pre.length){const msg=G.cut.length?'No layer stops this threat. Only the damage is cut.':'No layers yet. Every attempt reaches the asset.';
     wrap(ctx,msg,300,14*k,600).forEach((l,i)=>txt(ctx,l,395,240+i*19*k,{s:14*k,w:600,a:'center',c:PAL['cv-soft']}));}
   // dots
@@ -298,24 +298,25 @@ function drawLayers(sim,ctx,k){const st=sim.st,G=layerGeom(sim),t=G.t,row=G.row,
   const f=G.pre.map(c=>Math.round((1-c.stop[t.id])*100)+'%').join(' × ');
   const l1=n?'Last '+n+' attempts: '+(n-thr)+' stopped, '+thr+' got through':'Watch the attempts…';
   const l2=G.pre.length?(hon?'Chance one gets through: '+f+' = '+pct(row.pass):'About '+Math.round(row.pass*100)+' in 100 attempts get through every layer'):'Every attempt gets through';
-  txt(ctx,l1,400,ph?440:432,{s:13*k,w:700,a:'center'});txt(ctx,l2,400,ph?470:454,{s:13*k,a:'center',c:PAL['cv-soft']});
-  if(hon&&!ph)txt(ctx,'Expected loss: '+row.aro+' × '+pct(row.pass)+' × '+money(row.s2)+' = '+money(row.a2*row.s2)+' a year',400,476,{s:13,a:'center',c:PAL['cv-soft']});}
+  txt(ctx,l1,400,ph?456:446,{s:13*k,w:700,a:'center'});txt(ctx,l2,400,ph?486:466,{s:13*k,a:'center',c:PAL['cv-soft']});
+  if(hon&&!ph)txt(ctx,'Expected loss: '+row.aro+' × '+pct(row.pass)+' × '+money(row.s2)+' = '+money(row.a2*row.s2)+' a year',400,486,{s:13,a:'center',c:PAL['cv-soft']});}
 
 /* simulated year(s) */
 function stepYear(sim,dt){const y=sim.st.year;if(!y||y.clock>=y.dur)return;y.clock=Math.min(y.dur,y.clock+dt);if(y.clock>=y.dur)sim.infoDirty=true;}
 function drawYear(sim,ctx,k){const st=sim.st,pl=plan(sim),ph=k>1.4,ap=atLeast('ap');
-  if(st.many&&!st.year){header(sim,ctx,k,'1,000 simulated years');const M=st.many,top=Math.max(1000,M.so[Math.floor(M.so.length*0.99)]);
-    const nb=20,bw=top/nb,bins=new Array(nb).fill(0);M.ys.forEach(v=>{bins[Math.min(nb-1,Math.floor(v/bw))]++;});const bmax=Math.max(...bins);
+  if(st.many&&!st.year){header(sim,ctx,k,'1,000 simulated years','1,000 years');const M=st.many,top=Math.max(1000,M.so[Math.floor(M.so.length*0.99)]);
+    const nb=20,bw=top/nb,bins=new Array(nb).fill(0);M.ys.forEach(v=>{bins[Math.min(nb-1,Math.floor(v/bw))]++;});const ns=BioLab.h.niceStep(Math.max(...bins),4),bmax=Math.ceil(Math.max(...bins)/ns)*ns;
     const L=ph?70:90,T=80,W=ph?700:670,H=ph?300:310,X=v=>L+clamp(v/top,0,1)*W,Y=c=>T+H-c/bmax*H;
-    ctx.strokeStyle=PAL['g-grid'];ctx.lineWidth=1;for(let i=0;i<=4;i++){const yy=T+H*i/4;ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(L+W,yy);ctx.stroke();txt(ctx,String(Math.round(bmax*(1-i/4))),L-8,yy,{s:12*k,c:PAL['g-axis'],a:'right',b:'middle'});}
+    ctx.strokeStyle=PAL['g-grid'];ctx.lineWidth=1;for(let c=0;c<=bmax+1e-9;c+=ns){const yy=Y(c);ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(L+W,yy);ctx.stroke();txt(ctx,String(Math.round(c)),L-8,yy,{s:12*k,c:PAL['g-axis'],a:'right',b:'middle'});}
     bins.forEach((c,i)=>{ctx.fillStyle=PAL['s2'];ctx.fillRect(L+i*W/nb+1,Y(c),W/nb-2,T+H-Y(c));});
     for(let i=0;i<=4;i++){const v=top*i/4;txt(ctx,money(v),X(v),T+H+18*k,{s:12*k,c:PAL['g-axis'],a:i===0?'left':i===4?'right':'center'});}
-    txt(ctx,'Loss in one year (what the bakery pays)',L+W/2,T+H+40*k,{s:13*k,c:PAL['muted'],a:'center'});
+    txt(ctx,'Years',L-8,T-10,{s:12*k,c:PAL['muted'],a:'right'});txt(ctx,'Loss in one year (what the bakery pays)',L+W/2,T+H+40*k,{s:13*k,c:PAL['muted'],a:'center'});
     const mk=(v,c,lab,row)=>{const x=X(v);ctx.strokeStyle=c;ctx.lineWidth=2.5;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+H);ctx.stroke();ctx.setLineDash([]);
-      const right=x<L+W*0.6;txt(ctx,lab,x+(right?6:-6),T+14+row*19*k,{s:13*k,w:700,c,a:right?'left':'right'});};
+      const right=x<L+W*0.6,ty=T+14+row*22*k;ctx.font='700 '+13*k+'px '+FONT;const tw=ctx.measureText(lab).width;rr(ctx,right?x+2:x-tw-10,ty-13*k,tw+8,18*k,4);ctx.fillStyle=PAL['card'];ctx.globalAlpha=0.92;ctx.fill();ctx.globalAlpha=1;
+      txt(ctx,lab,x+(right?6:-6),ty,{s:13*k,w:700,c,a:right?'left':'right'});};
     mk(M.mean,PAL['s1'],'average '+money(M.mean),0);mk(M.median,PAL['s3'],'median '+money(M.median),1);if(ap)mk(M.p95,PAL['s4'],'1-in-20 bad year '+money(M.p95),2);
     txt(ctx,M.zero+' of 1,000 years had no loss at all',780,ph?492:488,{s:12*k,c:PAL['cv-soft'],a:'right'});return;}
-  header(sim,ctx,k,'A year at Pinecrest Bakery');const ts=threatsFor(sim,pl),L=ph?64:132,R=780,T=88,rh=Math.min(34,240/ts.length),X=d=>L+(d+0.5)/365*(R-L);
+  header(sim,ctx,k,'A year at Pinecrest Bakery','One year');const ts=threatsFor(sim,pl),L=ph?64:132,R=780,T=88,rh=Math.min(34,240/ts.length),X=d=>L+(d+0.5)/365*(R-L);
   const MON=ph?['J','F','M','A','M','J','J','A','S','O','N','D']:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   MON.forEach((m,i)=>{const x=L+(i+0.5)*(R-L)/12;txt(ctx,m,x,T-8,{s:12*k,c:PAL['cv-soft'],a:'center'});if(i){ctx.strokeStyle=PAL['g-grid'];ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L+i*(R-L)/12,T);ctx.lineTo(L+i*(R-L)/12,T+rh*ts.length);ctx.stroke();}});
   ts.forEach((t,i)=>{const y=T+rh*(i+0.5);if(i%2===0){ctx.fillStyle=PAL['cv-bg2'];ctx.fillRect(L,y-rh/2,R-L,rh);}badge(ctx,ph?30:22,y,Math.min(rh*0.42,13),i+1,t.custom?'#5f6b7a':CIAF[t.cia],k);
@@ -350,10 +351,10 @@ const RISK={
   scale:'One small shop, one year: about 2 phishing attempts reach a careless click each year; a ransomware attack costs about $40,000.',
   aspect:1.6,timeless:true,animated:true,graph:false,chChange:1,chReveal:4.5,
   controls:[
-    {id:'mode',label:'Mode',type:'seg',def:'case',options:[{v:'case',l:'Investigate'},{v:'sandbox',l:'Try it yourself'}],onChange:onMode},
-    {id:'view',label:'Show',type:'seg',def:'matrix',options:[{v:'matrix',l:'Risk matrix'},{v:'layers',l:'Layers'},{v:'year',l:'Simulated year'}]},
-    {id:'threat',label:'Threat',type:'select',def:'phish',options:THREATS.map((t,i)=>({v:t.id,l:(i+1)+'. '+t.name,lvl:t.lvl})),help:'Or click a threat on the stage.'},
-    {id:'compare',label:'Show analyst estimates',type:'toggle',def:false,modes:['case'],help:'Rings show the rating that real loss data gives.'},
+    {id:'mode',label:'Mode',type:'seg',def:'case',noTrial:true,options:[{v:'case',l:'Investigate'},{v:'sandbox',l:'Try it yourself'}],onChange:onMode},
+    {id:'view',label:'Show',type:'seg',noTrial:true,def:'matrix',options:[{v:'matrix',l:'Risk matrix'},{v:'layers',l:'Layers'},{v:'year',l:'Simulated year'}]},
+    {id:'threat',label:'Threat',type:'select',noTrial:true,def:'phish',options:THREATS.map((t,i)=>({v:t.id,l:(i+1)+'. '+t.name,lvl:t.lvl})),help:'Or click a threat on the stage.'},
+    {id:'compare',label:'Show analyst estimates',noTrial:true,type:'toggle',def:false,modes:['case'],help:'Rings show the rating that real loss data gives.'},
     {id:'budget',label:'Security budget',type:'range',min:0,max:5000,step:100,def:2000,unit:' $/yr',modes:['sandbox']}
   ],
   actions:[
@@ -383,7 +384,7 @@ const RISK={
     else if(sim.p.view==='year'&&!sim.st.many){const rh=Math.min(34,240/ts.length),i=Math.floor((y-88)/rh);if(i>=0&&i<ts.length&&!ts[i].custom)BioLab.setValues(sim,{threat:ts[i].id});}},
   narrate(sim){const st=sim.st,pl=plan(sim),ev=evaluate(sim,pl),hon=atLeast('honors'),ap=atLeast('ap'),v=sim.p.view;
     if(v==='layers'){const G=layerGeom(sim),t=G.t;if(!G.pre.length)return 'Nothing stands between <b>'+t.name.toLowerCase()+'</b> and the '+t.asset.toLowerCase()+(G.cut.length?'. Your '+G.cut.map(c=>c.short).join(' and ')+' only cut the damage after it happens.':', so every attempt gets through. Add a control that stops it.');
-      return '<b>Defense in depth:</b> each layer has holes, but the holes rarely line up. With '+G.pre.map(c=>c.short).join(', ')+', about '+Math.round(G.row.pass*100)+' in 100 attempts get through'+(G.pre.length>1?', even though no single layer stops more than '+Math.round(Math.max(...G.pre.map(c=>c.stop[t.id]))*100)+'%':'')+'.'+(hon?' The chances multiply: '+G.pre.map(c=>pct(1-c.stop[t.id])).join(' × ')+' = '+pct(G.row.pass)+'.':'');}
+      return '<b>Defense in depth:</b> each layer has holes, but the holes rarely line up. With '+G.pre.map(c=>c.short).join(', ')+', about '+Math.round(G.row.pass*100)+' in 100 attempts get through'+(G.pre.length>1?', even though no single layer stops more than '+Math.round(Math.max(...G.pre.map(c=>c.stop[t.id]))*100)+'%':'')+'.'+(hon&&G.pre.length>1?' The chances multiply: '+G.pre.map(c=>pct(1-c.stop[t.id])).join(' × ')+' = '+pct(G.row.pass)+'.':'');}
     if(v==='year'){if(st.many){const M=st.many;return 'Across 1,000 simulated years the bakery loses <b>'+money(M.mean)+' a year on average</b>, close to the expected loss of '+money(ev.ale)+'. The median year costs only '+money(M.median)+': most years are quiet, and a few rare disasters pull the average up.'+(ap?' One year in 20 costs '+money(M.p95)+' or more.':'');}
       if(!st.year)return 'Press <b>Run one year</b> to play out a year at the bakery with your plan.';
       const y=st.year,done=y.clock>=y.dur,got=y.events.filter(e=>!e.by);
@@ -397,8 +398,8 @@ const RISK={
     return 'Your highest risk is <b>'+top.name.toLowerCase()+'</b> ('+r.L+' × '+r.I+' = '+r.L*r.I+', '+band(r.L*r.I).n+'). '+(rated.length<ts.length?(ts.length-rated.length)+' threat'+(ts.length-rated.length===1?' is':'s are')+' still unrated.':(ap?'In dollars, the biggest expected loss is '+big.t.name.toLowerCase()+' at '+money(big.base)+' a year.':'Now pick a treatment for each one and buy controls.'));},
   tour:[
     {title:'A small business with real risks',text:'Pinecrest Bakery (fictional) has four kinds of assets: customer data, a card reader, an online-order website and two laptops. Each threat in the list could hurt one of them.',focus:[540,60,256,380],pause:true,setup(sim){BioLab.setValues(sim,{mode:'case',view:'matrix',compare:false});usePreset(sim,'none');}},
-    {title:'Risk = likelihood × impact',text:{bio:'Each threat lands on the grid by how likely it is in a year (up) and how bad one incident is (right). The top-right corner is where the worst risks live.',honors:'A 5 × 5 risk matrix: score = likelihood × impact, from 1 (low) to 25 (critical). Here every threat is placed at the analyst’s rating from loss data.'},focus:[[140,60,394,380]],pause:true,setup(sim){usePreset(sim,'none');BioLab.setValues(sim,{compare:true});}},
-    {title:'Common is not the same as costly',text:'Power outages happen 1 to 2 times a year but cost about $1,500 each. Ransomware hits about once every 4 years but costs about $40,000. Over time, ransomware costs the bakery four times as much.',focus:[[140,60,394,380]],pause:true,setup(sim){BioLab.setValues(sim,{threat:'ransom'});}},
+    {title:'Risk = likelihood × impact',text:{bio:'Each threat lands on the grid by how likely it is in a year (up) and how bad one incident is (right). The top-right corner is where the worst risks live.',honors:'A 5 × 5 risk matrix: score = likelihood × impact, from 1 (low) to 25 (critical). Here every threat is placed at the analyst’s rating from loss data.'},focus:[[8,58,532,440]],pause:true,setup(sim){usePreset(sim,'none');BioLab.setValues(sim,{compare:true});}},
+    {title:'Common is not the same as costly',text:'Power outages happen 1 to 2 times a year but cost about $1,500 each. Ransomware hits about once every 4 years but costs about $40,000. Over time, ransomware costs the bakery four times as much.',focus:[[8,58,532,440]],pause:true,setup(sim){BioLab.setValues(sim,{threat:'ransom'});}},
     {title:'Layers of Swiss cheese',text:{bio:'One defense always has holes. Stack several and an attack only gets through if it finds a hole in every one. Here an email filter, training and MFA guard against phishing.',honors:'Each preventive layer stops part of the attacks. The chance one gets through all three is 40% × 50% × 30% = 6%.'},focus:[[180,80,450,340]],speed:1,setup(sim){usePreset(sim,'trainFilterMfa');BioLab.setValues(sim,{view:'layers',threat:'phish'});}},
     {title:'Some controls cut the damage instead',text:'Backups do not stop ransomware from getting in. They let the bakery restore its files, so the damage drops from $40,000 to about $6,000. That is a corrective control.',focus:[[560,130,236,280]],speed:1,setup(sim){usePreset(sim,'plan');BioLab.setValues(sim,{view:'layers',threat:'ransom'});}},
     {title:'Play out a year',text:'A year at the bakery: each mark is one attack. Rings were stopped by a layer, red marks got through and cost money. Run it again and the year changes, because attacks are random.',focus:[[0,60,800,440]],speed:1,setup(sim){usePreset(sim,'plan');sim.st.year={events:simYear(sim,plan(sim),2024),clock:0,dur:5};BioLab.setValues(sim,{view:'year'});}},
