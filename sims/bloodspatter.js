@@ -27,6 +27,8 @@ const SC={};
 function genScene(key){if(SC[key])return SC[key];
   const r=rng(key==='one'?4127:9931);
   const srcs=key==='one'?[{x:150,y:110,z:95,n:7,id:'A'}]:[{x:88,y:76,z:58,n:5,id:'A'},{x:200,y:130,z:104,n:5,id:'B'}];
+  return SC[key]=buildScene(key,r,srcs);}
+function buildScene(key,r,srcs){
   const stains=[];
   srcs.forEach((S,si)=>{let made=0,tries=0;
     while(made<S.n&&tries<4000){tries++;
@@ -48,8 +50,8 @@ function genScene(key){if(SC[key])return SC[key];
     g.forEach(s=>{s.dC=Math.hypot(s.x-X,s.y-Y);s.hEst=s.dC*Math.tan(s.thm*DEG);});
     const hAvg=g.reduce((q,s)=>q+s.hEst,0)/g.length;
     return {x:X,y:Y,r:Math.max(4,Math.sqrt(ss/g.length)),h:hAvg,id:S.id};});
-  return SC[key]={key,srcs,stains,conv};}
-const sceneOf=sim=>genScene(sim.p.scase==='two'&&atLeast('honors')?'two':'one');
+  return {key,srcs,stains,conv};}
+const sceneOf=sim=>sim.game&&sim.gameRound&&sim.gameRound.sc?sim.gameRound.sc:genScene(sim.p.scase==='two'&&atLeast('honors')?'two':'one');
 const selStain=sim=>{const sc=sceneOf(sim);return sc.stains[clamp(Math.round(sim.p.stain)-1,0,sc.stains.length-1)];};
 
 /* ---------- local UI helpers ---------- */
@@ -57,7 +59,12 @@ function syncMode(sim){if(!sim.ui||!sim.ui.sec)return;const mode=sim.p.mode,d=si
   d.controls.forEach(c=>{if(!c.modes)return;const cid=d.id+'-'+c.id,e=document.getElementById(cid)||document.getElementById(cid+'-l');if(!e)return;const w=e.closest('.ctl');if(w)w.hidden=!atLeast(c.lvl)||!c.modes.includes(mode)||(c.only&&!c.only(sim));});
   d.metrics.forEach(m=>{if(!m.modes)return;const t=sim.ui.tiles[m.id];if(!t)return;const w=t.num.closest('.tile');if(w)w.hidden=!atLeast(m.lvl)||!m.modes.includes(mode)||(m.only&&!m.only(sim));});
   const btns=[...sim.ui.sec.querySelectorAll('.actions button')];
-  d.actions.forEach(a=>{const b=btns.find(x=>x.textContent===a.label);if(b)b.hidden=!atLeast(a.lvl)||!a.modes.includes(mode);});}
+  d.actions.forEach(a=>{const b=btns.find(x=>x.textContent===a.label);if(b)b.hidden=!atLeast(a.lvl)||!a.modes.includes(mode);});
+  // during a Challenge round, keep only the round's controls showing (draw() calls this when the task changes)
+  const gr=sim.game&&sim.gameRound;if(gr){const al=gr.controls||[];
+    d.controls.forEach(c=>{const cid=d.id+'-'+c.id,e=document.getElementById(cid)||document.getElementById(cid+'-l'),w=e&&e.closest('.ctl');if(w&&!al.includes(c.id))w.hidden=true;});
+    btns.forEach(b=>b.hidden=true);
+    if(gr.metrics)d.metrics.forEach(m=>{const t=sim.ui.tiles[m.id],w=t&&t.num.closest('.tile');if(w&&!gr.metrics.includes(m.id))w.hidden=true;});}}
 function wrapLines(ctx,s,maxW,sz,w){ctx.font=(w||400)+' '+sz+'px '+FONT;if(ctx.measureText(s).width<=maxW)return [s];const words=s.split(' '),out=[];let cur='';
   for(const wd of words){const t=cur?cur+' '+wd:wd;if(ctx.measureText(t).width>maxW&&cur){out.push(cur);cur=wd;}else cur=t;}if(cur)out.push(cur);return out;}
 function para(ctx,s,x,y,maxW,sz,o){o=o||{};const ls=wrapLines(ctx,s,maxW,sz,o.w);ls.forEach((l,i)=>txt(ctx,l,x,y+i*sz*1.25,{s:sz,w:o.w||400,c:o.c||PAL['cv-ink'],a:o.a||'left'}));return y+ls.length*sz*1.25;}
@@ -97,6 +104,84 @@ const PP={x:16,y:30,w:768,h:406};
 const SR={x:562,y:30,w:226,h:406};
 function stainLayout(m,k){const tot=m.L+m.T+(m.th<35?m.W*0.6:0);const s=Math.min(9,(PAPR.w-130)/tot,150/m.W);const left=PAPR.x+60+(PAPR.w-90-tot*s)/2,cx=left+m.L/2*s;const gh=m.W*s+14+30+16*k;const cy=PAPR.y+Math.max(24,(PAPR.h-30-gh)/2)+m.W/2*s;return {s,cx,cy,left};}
 
+/* ---------- Challenge game: "Find the origin" ----------
+   Angle rounds: the student reads W and L of a practice stain, sets θ, and drops a test drop at that angle (same height, so same W).
+     A hit is within 3° of sin⁻¹(W/L); the evidence is built from a 5° step, so exactly one slider value passes.
+   Scene rounds: a fresh fictional floor pattern from one source. Convergence: marker within 15 cm (strings shown) or 20 cm (no strings)
+     of the least-squares crossing point. Height: h = d × tan θ from the panel's rounded θ and d, within 5% (at least 4 cm). */
+const GT={ang:3,conv:15,convOff:20,hPct:0.05,hMin:4};
+const grs=(a,b,st)=>Math.round((a+Math.random()*(b-a))/st)*st;
+const f1=x=>x.toFixed(1);
+const GKINDS={bio:['angle','angle','angle','conv','conv','convOff'],honors:['angle','angleTail','conv','convOff','h1','h1'],ap:['angleTail','convOff','h1','h3','h3','both']};
+const hOf=s=>{const tg=Number(s.thm.toFixed(0)),dg=Math.round(s.dC);return {n:s.n,tg,dg,h:dg*Math.tan(tg*DEG)};};
+const hOK=q=>q.tg>=25&&q.tg<=55&&q.dg>=50&&q.dg<=200&&q.h>=20&&q.h<=240;
+function gameScene(n,need){for(let k=0;k<400;k++){const relax=k>=300;const seed=1+Math.floor(Math.random()*2e9),r=rng(seed);
+    const S={x:grs(105,195,1),y:grs(80,140,1),z:grs(70,130,5),n,id:'A'},sc=buildScene('g'+seed,r,[S]);
+    if(sc.stains.length!==n&&!relax)continue;const c=sc.conv[0];if(Math.hypot(c.x-S.x,c.y-S.y)>12||c.x<20||c.x>280||c.y<20||c.y>200)continue;
+    const hs=sc.stains.map(hOf).filter(hOK);if(hs.length<need)continue;sc.hs=hs;return sc;}
+  const sc=genScene('one');if(!sc.hs)sc.hs=sc.stains.map(hOf).filter(hOK);return sc;}
+function pickN(a,n){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b.slice(0,n).sort((x,y)=>x.n-y.n);}
+function angleCase(tail,avoid){for(let k=0;k<400;k++){const th=grs(15,tail?55:75,5);if(th===avoid)continue;const h=grs(50,300,10),Wg=+diam(vImpact(h/100),50).toFixed(1),Lg=+(Wg/Math.sin(th*DEG)).toFixed(1),ans=Math.asin(Wg/Lg)/DEG;
+    if(Math.abs(ans-th)>0.6)continue;const Tg=Math.max(0.5,+tailLen(Wg,th).toFixed(1));return {kind:'angle',tail,h,th,Wg,Lg,Tg,tot:+(Lg+Tg).toFixed(1),ans};}}
+const stainList=hs=>hs.map(q=>`Stain ${q.n}: θ = ${q.tg}°, d = ${q.dg} cm`).join('<br>');
+const GAME={label:'Find the origin',title:'Find the origin',rounds:6,fireLabel:'Check',par:300,controls:[],metrics:[],
+  intro:{bio:'Six fictional practice cases. First read single stains to find the angle each drop hit at, then trace a floor pattern back to where it came from. Set the slider (or click the floor), then press Check. A first-try answer scores 3 points.',
+         honors:'Six fictional practice cases: the impact angle from W and L, the area of convergence, then the height of origin. Work each one out, set your answer, then press Check. First-try answers score 3 points.',
+         ap:'Six fictional practice cases that end with a full area of origin. Use θ = sin⁻¹(W/L), string lines and the tangent method, h = d × tan θ. First-try answers score 3 points.'},
+  newRound(sim,i){const lv=BioLab.level,kind=(GKINDS[lv]||GKINDS.bio)[i]||'angle',hint=lv==='bio',N=i+1;let r;
+    if(kind==='angle'||kind==='angleTail'){const tail=kind==='angleTail';r=angleCase(tail,sim._gLastTh);sim._gLastTh=r.th;r.controls=['angle'];
+      r.prompt=tail?`<b>Round ${N}: leave out the tail.</b> This practice stain is <b>W = ${f1(r.Wg)} mm</b> wide. Measured tip to tip with its tail, it is <b>${f1(r.tot)} mm</b> long, and the tail alone is <b>${f1(r.Tg)} mm</b>. Set the angle the drop hit at, then press Check to drop a test drop at your angle.`+(lv==='honors'?` <span class="gm-hint">L is the oval body only.</span>`:'')
+        :`<b>Round ${N}: find the impact angle.</b> A test drop in a practice lab left the shaded stain, <b>W = ${f1(r.Wg)} mm</b> wide and <b>L = ${f1(r.Lg)} mm</b> long (tail not included). Set the angle it hit at, then press Check to drop one at your angle.`
+          +(hint?` <span class="gm-hint">${i===0?'Hint: divide W by L, then use sin⁻¹ on a calculator in degree mode: θ = sin⁻¹(W ÷ L). For example, 10 ÷ 20 = 0.5 and sin⁻¹(0.5) = 30°.':i===1?'Hint: θ = sin⁻¹(W ÷ L). A rounder stain means a steeper hit.':'Hint: same rule. The longer the stain is compared with its width, the smaller the angle.'}</span>`:'');
+      sim.gameRound=r;BioLab.setValues(sim,{mode:'drop',height:r.h,angle:90,surface:'smooth',vol:50,guides:false,check:false});BioLab.reset(sim);sim.running=true;return r;}
+    const need=kind==='h1'?1:kind==='conv'||kind==='convOff'?0:3,sc=gameScene(lv==='ap'?7:6,need);
+    r={kind,sc,conv:kind==='conv'||kind==='convOff'||kind==='both',strOn:kind!=='convOff'&&kind!=='both'};
+    r.tolC=r.strOn?GT.conv:GT.convOff;
+    if(kind==='h1'||kind==='h3'||kind==='both'){r.hs=pickN(sc.hs,kind==='h1'?1:3);r.ans=r.hs.reduce((a,q)=>a+q.h,0)/r.hs.length;r.tolH=Math.max(GT.hMin,GT.hPct*r.ans);}
+    const firstH=kind==='h1'&&GKINDS[lv].indexOf('h1')===i;
+    if(kind==='conv')r.prompt=`<b>Round ${N}: find the area of convergence.</b> In this mock scene, drops flew from one spot onto the floor. Each blue string line runs back along a stain, away from its tail. Click the floor where the lines cross, then press Check.`+(hint?` <span class="gm-hint">Hint: the tails point away from the source, so the source is back where the lines meet.</span>`:'');
+    else if(kind==='convOff')r.prompt=`<b>Round ${N}: no strings this time.</b> A new mock scene. Look back along each stain’s long axis, away from its tail, and click where those lines would cross. If you miss, the string lines appear to help.`+(hint?` <span class="gm-hint">Hint: line up two of the longest stains first. Where their axes meet is a good start.</span>`:'');
+    else if(kind==='h1'){const q=r.hs[0];r.prompt=`<b>Round ${N}: how high was the source?</b> The green circle marks the area of convergence. Stain ${q.n} hit at <b>θ = ${q.tg}°</b> and lies <b>d = ${q.dg} cm</b> from it, as the Stain ${q.n} panel shows. Use the tangent method to set the height the blood came from.`+(firstH?` <span class="gm-hint">h = d × tan θ, with your calculator in degree mode.</span>`:'');}
+    else if(kind==='h3')r.prompt=`<b>Round ${N}: average three stains.</b> One stain can mislead, so analysts average several. Find h = d × tan θ for each stain, then set the average height:<br>${stainList(r.hs)}`;
+    else r.prompt=`<b>Round ${N}: the full area of origin.</b> No strings. Put the marker on the area of convergence, then set the source height from these stains’ worksheet values:<br>${stainList(r.hs)}<span class="gm-hint">Both parts must be right to score.</span>`;
+    r.controls=kind==='h1'?['gz']:kind==='h3'?['gz','stain']:kind==='both'?['gx','gy','gz']:['gx','gy'];
+    sim.gameRound=r;BioLab.setValues(sim,{mode:'scene',scase:'one',strings:r.strOn,reveal:false,stain:r.hs?r.hs[0].n:1,gx:40,gy:30,gz:0});BioLab.reset(sim);sim.running=true;return r;},
+  fire(sim,r){r.go=true;r.shot=null;r.t0=sim.st.pt;sim.st.key='';sim.running=true;},
+  retry(sim,r){sim.running=true;},
+  poll(sim,r){const st=sim.st,p=sim.p;if(!r.go)return null;
+    if(r.kind==='angle'){if(st.ph!=='done')return null;r.go=false;const m=dropModel(p);r.shot={angle:p.angle,L:m.L,T:m.T,W:m.W};const e=p.angle-r.ans;
+      if(Math.abs(e)<=GT.ang)return {ok:true,msg:`Match! Your ${p.angle}° test drop left a stain ${f1(m.L)} mm long, the same shape as the evidence. sin⁻¹(${f1(r.Wg)} ÷ ${f1(r.Lg)}) = ${r.ans.toFixed(1)}°.`};
+      const near=v=>Math.round(v/5)*5===p.angle,q=r.Wg/r.Lg;let tip='Divide W by L, then take sin⁻¹.';
+      if(r.tail&&near(Math.asin(r.Wg/r.tot)/DEG))tip='You used the length with the tail. Subtract the tail first to get L.';
+      else if(near(90*q))tip='That is 90° × W ÷ L. The rule is θ = sin⁻¹(W ÷ L).';
+      else if(near(Math.acos(q)/DEG))tip='That is cos⁻¹(W ÷ L). Use sin⁻¹ instead.';
+      return {ok:false,msg:`Your ${p.angle}° test drop left a stain ${f1(m.L)} mm long, ${e>0?'shorter':'longer'} than the ${f1(r.Lg)} mm evidence stain. ${e>0?'A longer stain means a shallower hit: try a smaller angle.':'A shorter stain means a steeper hit: try a larger angle.'} ${tip}`};}
+    if(st.pt-r.t0<0.5)return null;r.go=false;
+    let ok=true,convMiss=false;const parts=[];
+    if(r.conv){const c=r.sc.conv[0],dx=p.gx-c.x,dy=p.gy-c.y,dist=Math.hypot(dx,dy);
+      if(dist<=r.tolC)parts.push(`Your marker is ${Math.round(dist)} cm from where the string lines cross, inside the area of convergence.`);
+      else{ok=false;convMiss=true;const hz=Math.abs(dx)>=6?(dx>0?'left':'right'):'',vt=Math.abs(dy)>=6?(dy>0?'up':'down'):'';
+        parts.push(`Your marker is ${Math.round(dist)} cm from where ${p.strings?'the string lines cross':'the stains’ long axes meet'}. Move it ${[vt,hz].filter(Boolean).join(' and ')}.`);}}
+    if(r.hs){const e=p.gz-r.ans;
+      if(Math.abs(e)<=r.tolH){const one=r.hs[0];parts.push(r.hs.length===1?`h = d × tan θ = ${one.dg} × tan ${one.tg}° = ${f1(r.ans)} cm. You set ${p.gz} cm.`:`The stains give ${r.hs.map(q=>Math.round(q.h)).join(', ')} cm; the average is ${f1(r.ans)} cm. You set ${p.gz} cm.`);}
+      else{ok=false;const near=v=>Math.abs(p.gz-v)<=r.tolH;let tip='Check h = d × tan θ, with your calculator in degree mode.';
+        const sum=f=>r.hs.reduce((a,q)=>a+f(q),0)/r.hs.length;
+        if(near(sum(q=>q.dg*Math.sin(q.tg*DEG))))tip='That matches d × sin θ. The tangent method uses tan θ.';
+        else if(near(sum(q=>q.dg*Math.cos(q.tg*DEG))))tip='That matches d × cos θ. The tangent method uses tan θ.';
+        else if(near(sum(q=>q.dg/Math.tan(q.tg*DEG))))tip='That is d ÷ tan θ. Multiply by tan θ instead.';
+        else if(near(sum(q=>q.dg*Math.tan(q.tg))))tip='Your calculator is in radian mode. Switch it to degrees.';
+        else if(r.hs.length>1&&r.hs.some(q=>near(q.h)))tip='That is one stain’s height. Average all three.';
+        parts.push(`A source height of ${p.gz} cm is too ${e>0?'high':'low'}. ${tip}`);}}
+    if(ok){r.shown=true;if(r.conv)BioLab.setValues(sim,{strings:true});
+      if(r.hs&&atLeast('ap')){const z=r.sc.srcs[0].z;parts.push(r.ans>z+3?`The real source in this mock scene was ${z} cm up: straight strings overshoot, because real drops curve down.`:`The real source was ${z} cm up.`);}
+      else if(r.conv&&!r.hs)parts.push('The blood came from somewhere above that spot.');
+      return {ok:true,msg:(r.hs&&!r.conv?'Right on. ':'Found it. ')+parts.join(' ')};}
+    if(convMiss&&!p.strings){BioLab.setValues(sim,{strings:true});parts.push('The string lines are drawn now to help.');}
+    return {ok:false,msg:parts.join(' ')};},
+  solve(sim,r){const v={};if(r.kind==='angle')v.angle=clamp(Math.round(r.ans/5)*5,10,90);
+    if(r.conv){const c=r.sc.conv[0];v.gx=clamp(Math.round(c.x/5)*5,0,300);v.gy=clamp(Math.round(c.y/5)*5,0,220);}
+    if(r.hs)v.gz=clamp(Math.round(r.ans),0,250);BioLab.setValues(sim,v);}};
+
 const BS={
   id:'bloodspatter',hash:'bloodspatter',apUnit:7,order:1,tab:'Blood spatter',kind:'Virtual lab',prereq:['crimescene'],next:['dna'],
   card:'Drop blood from different heights and angles, measure each stain with a ruler, and trace a scene’s stains back to where the blood came from.',
@@ -123,12 +208,17 @@ const BS={
     {id:'stain',label:'Stain to examine',type:'select',def:1,lvl:'bio',noTrial:true,modes:['scene'],options:[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:'Stain '+n,lvl:n>7?'honors':undefined}))},
     {id:'gx',label:'Your source estimate: across',type:'range',min:0,max:300,step:5,def:40,unit:' cm',lvl:'bio',noTrial:true,modes:['scene'],help:'Or click the floor to place your marker.'},
     {id:'gy',label:'Your source estimate: down',type:'range',min:0,max:220,step:5,def:30,unit:' cm',lvl:'bio',noTrial:true,modes:['scene']},
-    {id:'reveal',label:'Show the true source',type:'toggle',def:false,lvl:'bio',noTrial:true,modes:['scene']}
+    {id:'reveal',label:'Show the true source',type:'toggle',def:false,lvl:'bio',noTrial:true,modes:['scene']},
+    {id:'gz',label:'Your source estimate: height',type:'range',min:0,max:250,step:1,def:0,unit:' cm',lvl:'honors',noTrial:true,modes:['scene'],only:s=>!!s.game,help:'Height above the floor, from h = d × tan θ.'}
   ],
+  game:GAME,
   actions:[{id:'again',label:'Drop again',lvl:'bio',primary:true,modes:['drop'],run(sim){sim.st.key='';}}],
   init(sim){return {key:'',ph:'fall',a:0,b:0,pt:0};},
   step(sim,dt){const st=sim.st,p=sim.p;st.pt+=dt;if(p.mode!=='drop')return;
-    const key=[p.height,p.angle,p.vol,p.surface].join('|');if(key!==st.key){st.key=key;st.ph='fall';st.a=0;st.b=0;}
+    const key=[p.height,p.angle,p.vol,p.surface].join('|');
+    // Challenge angle round: the test drop hangs at the dropper until Check is pressed
+    const gr=sim.game&&sim.gameRound;if(gr&&gr.kind==='angle'&&!gr.go){st.key=key;st.ph='fall';st.a=0;st.b=0;return;}
+    if(key!==st.key){st.key=key;st.ph='fall';st.a=0;st.b=0;}
     const tf=fallTime(p);if(st.ph==='fall'){st.a+=dt;if(st.a>=tf){st.ph='spread';st.b=0;}}else if(st.ph==='spread'){st.b+=dt;if(st.b>=0.35)st.ph='done';}},
   metrics:[
     {id:'v',label:'Impact speed',unit:'m/s',lvl:'bio',min:0,max:8,d:2,modes:['drop'],get:s=>dropModel(s.p).v},
@@ -311,6 +401,7 @@ function drawDrop(sim,ctx,k,t){const p=sim.p,st=sim.st,m=dropModel(p),hon=atLeas
   // top view
   panel(ctx,RP,'Top view of the paper',k,'enlarged · ruler in mm');
   ctx.fillStyle=PAPER;rr(ctx,PAPR.x,PAPR.y,PAPR.w,PAPR.h,4);ctx.fill();ctx.strokeStyle='#d9d6cc';ctx.lineWidth=1;ctx.stroke();
+  const gr=sim.game&&sim.gameRound;if(gr&&gr.kind==='angle'){drawGameStain(sim,ctx,k,m,gr);return;}
   const L=stainLayout(m,k),f=st.ph==='fall'?0:st.ph==='spread'?1-Math.pow(1-clamp(st.b/0.35,0,1),3):1;
   const nsat=p.surface==='rough'?Math.round(clamp((m.v-1)*2.6,2,18)):0;
   drawStain(ctx,L.cx,L.cy,m.W,m.L,m.T,0,L.s,{f,rough:p.surface==='rough',nsat:f>=1?nsat:0,seed:p.height+p.angle,th:m.th});
@@ -325,6 +416,20 @@ function drawDrop(sim,ctx,k,t){const p=sim.p,st=sim.st,m=dropModel(p),hon=atLeas
   if(p.angle<85){arrow(ctx,PAPR.x+18,by-4,PAPR.x+58,by-4,INK2,2);txt(ctx,'direction of travel',PAPR.x+66,by,{s:12*k,c:INK2});}
   else txt(ctx,'Straight on: no tail',PAPR.x+16,by,{s:12*k,c:INK2});
   if(hon&&k<1.35)txt(ctx,'Measure the oval body, not the tail',PAPR.x+PAPR.w-14,by,{s:12*k,c:INK2,a:'right'});}
+
+/* Challenge angle round: the shaded evidence stain, and the student's test drop on top of it, both starting at the ruler's zero */
+function drawGameStain(sim,ctx,k,m,gr){const st=sim.st,E={W:gr.Wg,L:gr.Lg,T:gr.Tg,th:gr.ans};
+  const S=gr.go?{W:m.W,L:m.L,T:m.T,th:sim.p.angle,a:sim.p.angle}:gr.shot?{W:gr.shot.W,L:gr.shot.L,T:gr.shot.T,th:gr.shot.angle,a:gr.shot.angle}:null;
+  const lay=stainLayout(S?{W:E.W,L:Math.max(E.L,S.L),T:Math.max(E.T,S.T),th:Math.min(E.th,S.th)}:E,k),s=lay.s,cy=lay.cy,left=lay.left;
+  const LL=S?Math.max(E.L+E.T,S.L+S.T):E.L+E.T;
+  drawStain(ctx,left+E.L/2*s,cy,E.W,E.L,E.T,0,s,{col:'rgba(194,122,0,.32)',th:E.th});
+  ctx.save();ctx.setLineDash([6,4]);ctx.strokeStyle=TRUE;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(left+E.L/2*s,cy,E.L/2*s,E.W/2*s,0,0,TAU);ctx.stroke();ctx.restore();
+  if(S){const f=gr.go?(st.ph==='fall'?0:st.ph==='spread'?1-Math.pow(1-clamp(st.b/0.35,0,1),3):1):1;
+    if(f>0){ctx.globalAlpha=0.85;drawStain(ctx,left+S.L/2*s,cy,S.W,S.L,S.T,0,s,{f,seed:7,th:S.th});ctx.globalAlpha=1;}}
+  ruler(ctx,left,cy+E.W/2*s+14,0,Math.ceil(LL+6),s,k);vruler(ctx,left-14,cy-E.W/2*s,Math.ceil(E.W+3),s,k);
+  const ty=PAPR.y+20*Math.min(k,1.4);ctx.fillStyle=TRUE;ctx.fillRect(PAPR.x+14,ty-10*k,14*k,10*k);txt(ctx,'Evidence stain (dashed: the oval you measure)',PAPR.x+34*Math.min(k,1.2),ty,{s:12*k,c:INK2});
+  if(S&&(!gr.go||st.ph!=='fall')){ctx.fillStyle=BLOOD;ctx.fillRect(PAPR.x+14,ty+18*k-10*k,14*k,10*k);txt(ctx,'Your test drop at '+S.a+'°',PAPR.x+34*Math.min(k,1.2),ty+18*k,{s:12*k,c:INK2});}
+  const by=PAPR.y+PAPR.h-14;arrow(ctx,PAPR.x+18,by-4,PAPR.x+58,by-4,INK2,2);txt(ctx,'direction of travel',PAPR.x+66,by,{s:12*k,c:INK2});}
 
 /* ---------- drawing: pattern types ---------- */
 function drawPattern(sim,ctx,k,t){const p=sim.p,P=PT[p.ptype];panel(ctx,PP,P.name,k);
@@ -361,7 +466,8 @@ function drawPattern(sim,ctx,k,t){const p=sim.p,P=PT[p.ptype];panel(ctx,PP,P.nam
   txt(ctx,n+(n>1?' lines: at least '+n+' swings':' line: at least 1 swing'),A.x+14,A.y+A.h-25,{s:13*k,w:700,c:INK});}
 
 /* ---------- drawing: scene ---------- */
-function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honors'),ap=atLeast('ap'),W=FL.w*FL.S,H=FL.h*FL.S,sel=selStain(sim);
+function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honors'),ap=atLeast('ap'),W=FL.w*FL.S,H=FL.h*FL.S,sel=selStain(sim),gr=sim.game&&sim.gameRound;
+  const showC=gr?!!(gr.shown||(gr.hs&&!gr.conv)):hon&&p.strings,gH=!!(gr&&gr.hs);
   txt(ctx,'Floor, top view: 3.0 m × 2.2 m',FL.x,FL.y-14,{s:13*k,w:700});
   ctx.fillStyle=PAPER;ctx.fillRect(FL.x,FL.y,W,H);ctx.strokeStyle='#e4e1d8';ctx.lineWidth=1;
   for(let x=50;x<300;x+=50){ctx.beginPath();ctx.moveTo(fx(x)+.5,FL.y);ctx.lineTo(fx(x)+.5,FL.y+H);ctx.stroke();}for(let y=50;y<220;y+=50){ctx.beginPath();ctx.moveTo(FL.x,fy(y)+.5);ctx.lineTo(FL.x+W,fy(y)+.5);ctx.stroke();}
@@ -370,7 +476,9 @@ function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honor
   // strings
   if(p.strings){ctx.save();ctx.beginPath();ctx.rect(FL.x,FL.y,W,H);ctx.clip();ctx.lineWidth=1.6;
     sc.stains.forEach(s=>{ctx.strokeStyle=STRING;ctx.globalAlpha=0.8;ctx.beginPath();ctx.moveTo(fx(s.x),fy(s.y));ctx.lineTo(fx(s.x)-Math.cos(s.phm)*560,fy(s.y)-Math.sin(s.phm)*560);ctx.stroke();});ctx.globalAlpha=1;
-    if(hon)sc.conv.forEach(c=>{ctx.setLineDash([4,3]);ctx.strokeStyle=CONV;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(fx(c.x),fy(c.y),Math.max(9,c.r*FL.S*1.6),0,TAU);ctx.stroke();ctx.setLineDash([]);});ctx.restore();}
+    ctx.restore();}
+  if(showC)sc.conv.forEach(c=>{ctx.setLineDash([4,3]);ctx.strokeStyle=CONV;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(fx(c.x),fy(c.y),Math.max(9,c.r*FL.S*1.6),0,TAU);ctx.stroke();ctx.setLineDash([]);
+    if(gr&&k<1.35)txt(ctx,'area of convergence',fx(c.x),fy(c.y)+Math.max(9,c.r*FL.S*1.6)+16,{s:12,w:700,c:CONV,a:'center'});});
   // stains
   const s1=MAG*FL.S/10;
   sc.stains.forEach(s=>{const cx=fx(s.x)-Math.cos(s.phi)*s.T*s1*0.4,cy=fy(s.y)-Math.sin(s.phi)*s.T*s1*0.4;drawStain(ctx,cx,cy,s.W,s.L,s.T,s.phi,s1,{seed:s.seed,th:s.th});
@@ -378,8 +486,8 @@ function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honor
     if(s===sel){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2;ctx.beginPath();ctx.arc(fx(s.x),fy(s.y),s.L*s1/2+s.T*s1*0.3+8,0,TAU);ctx.stroke();}
     ctx.fillStyle='rgba(251,250,246,.85)';ctx.beginPath();ctx.arc(lx,ly,8*k,0,TAU);ctx.fill();txt(ctx,String(s.n),lx,ly+1,{s:12*k,w:700,c:INK,a:'center',b:'middle'});});
   // guess and truth
-  const gx=fx(p.gx),gy=fy(p.gy);ctx.strokeStyle=GUESS;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(gx,gy,10,0,TAU);ctx.moveTo(gx-16,gy);ctx.lineTo(gx+16,gy);ctx.moveTo(gx,gy-16);ctx.lineTo(gx,gy+16);ctx.stroke();
-  if(k<1.35)txt(ctx,'your estimate',gx+14,gy-12,{s:12,w:700,c:GUESS});
+  const gx=fx(p.gx),gy=fy(p.gy);if(!(gH&&!gr.conv)){ctx.strokeStyle=GUESS;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(gx,gy,10,0,TAU);ctx.moveTo(gx-16,gy);ctx.lineTo(gx+16,gy);ctx.moveTo(gx,gy-16);ctx.lineTo(gx,gy+16);ctx.stroke();
+  if(k<1.35)txt(ctx,'your estimate',gx+14,gy-12,{s:12,w:700,c:GUESS});}
   if(p.reveal)sc.srcs.forEach(q=>{const x=fx(q.x),y=fy(q.y);ctx.fillStyle=TRUE;ctx.beginPath();for(let i=0;i<10;i++){const r=i%2?5:12,a=-Math.PI/2+i*Math.PI/5;ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a));}ctx.closePath();ctx.fill();
     txt(ctx,'source'+(sc.srcs.length>1?' '+q.id:'')+(ap?' · '+q.z+' cm up':''),x+14,y+18,{s:12*k,w:700,c:'#8a5600'});});
   // side panel: selected stain
@@ -389,11 +497,11 @@ function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honor
   let ty=Z.y+Z.h+22*Math.min(k,1.3);const lines=[];
   lines.push('Width W = '+sel.Wm.toFixed(1)+' mm');if(hon){lines.push('Length L = '+sel.Lm.toFixed(1)+' mm');lines.push('θ = sin⁻¹(W/L) = '+sel.thm.toFixed(0)+'°');}else lines.push('The tail points away from the source.');
   lines.forEach(l=>{txt(ctx,l,SR.x+12,ty,{s:13*k,c:PAL['cv-ink']});ty+=18*k;});
-  if(ap){const top=ty+4,bot=SR.y+SR.h-34,bx=SR.x+20,bw=SR.w-40,dC=sel.dC,hE=sel.hEst,sx=Math.min(bw/Math.max(dC,1),(bot-top-14)/Math.max(hE,1));
+  if(ap||gH){const top=ty+4,bot=SR.y+SR.h-34,bx=SR.x+20,bw=SR.w-40,dC=sel.dC,hE=sel.hEst,sx=Math.min(bw/Math.max(dC,1),(bot-top-14)/Math.max(hE,1));
     const x0=bx+bw,x1=x0-dC*sx,yb=bot,yt=bot-hE*sx;ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,yb);ctx.lineTo(x0,yb);ctx.stroke();
     ctx.strokeStyle=STRING;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,yb);ctx.lineTo(x1,yt);ctx.stroke();ctx.setLineDash([4,3]);ctx.strokeStyle=CONV;ctx.beginPath();ctx.moveTo(x1,yb);ctx.lineTo(x1,yt);ctx.stroke();ctx.setLineDash([]);
-    if(p.reveal){const q=sc.srcs[sel.g],yq=bot-q.z*sx;ctx.fillStyle=TRUE;ctx.beginPath();ctx.arc(x1,yq,5,0,TAU);ctx.fill();}
-    txt(ctx,'d = '+Math.round(dC)+' cm',(x0+x1)/2,yb+16*k,{s:12*k,c:PAL['cv-soft'],a:'center'});txt(ctx,'h = '+Math.round(hE)+' cm',x1+6,Math.max(top+12,(yb+yt)/2),{s:12*k,w:700,c:PAL['cv-ink']});}
+    if(p.reveal||(gH&&gr.shown&&ap)){const q=sc.srcs[sel.g],yq=bot-q.z*sx;ctx.fillStyle=TRUE;ctx.beginPath();ctx.arc(x1,yq,5,0,TAU);ctx.fill();}
+    txt(ctx,'d = '+Math.round(dC)+' cm',(x0+x1)/2,yb+16*k,{s:12*k,c:PAL['cv-soft'],a:'center'});txt(ctx,gH&&!gr.shown?'h = ?':'h = '+Math.round(hE)+' cm',x1+6,Math.max(top+12,(yb+yt)/2),{s:12*k,w:700,c:PAL['cv-ink']});}
 }
 BS.onLevel=syncMode;BS.controls[0].onChange=sim=>{syncMode(sim);sim.infoDirty=true;};
 BS.controls.find(c=>c.id==='ptype').onChange=sim=>syncMode(sim);
