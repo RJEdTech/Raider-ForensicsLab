@@ -153,8 +153,8 @@ const GAME={label:'Find the origin',title:'Find the origin',rounds:6,fireLabel:'
       if(Math.abs(e)<=GT.ang)return {ok:true,msg:`Match! Your ${p.angle}° test drop left a stain ${f1(m.L)} mm long, the same shape as the evidence. sin⁻¹(${f1(r.Wg)} ÷ ${f1(r.Lg)}) = ${r.ans.toFixed(1)}°.`};
       const near=v=>Math.round(v/5)*5===p.angle,q=r.Wg/r.Lg;let tip='Divide W by L, then take sin⁻¹.';
       if(r.tail&&near(Math.asin(r.Wg/r.tot)/DEG))tip='You used the length with the tail. Subtract the tail first to get L.';
-      else if(near(90*q))tip='That is 90° × W ÷ L. The rule is θ = sin⁻¹(W ÷ L).';
-      else if(near(Math.acos(q)/DEG))tip='That is cos⁻¹(W ÷ L). Use sin⁻¹ instead.';
+      else if(near(90*q))tip='That matches 90° × W ÷ L. The rule is θ = sin⁻¹(W ÷ L).';
+      else if(near(Math.acos(q)/DEG))tip='That matches cos⁻¹(W ÷ L). Use sin⁻¹ instead.';
       return {ok:false,msg:`Your ${p.angle}° test drop left a stain ${f1(m.L)} mm long, ${e>0?'shorter':'longer'} than the ${f1(r.Lg)} mm evidence stain. ${e>0?'A longer stain means a shallower hit: try a smaller angle.':'A shorter stain means a steeper hit: try a larger angle.'} ${tip}`};}
     if(st.pt-r.t0<0.5)return null;r.go=false;
     let ok=true,convMiss=false;const parts=[];
@@ -209,7 +209,7 @@ const BS={
     {id:'gx',label:'Your source estimate: across',type:'range',min:0,max:300,step:5,def:40,unit:' cm',lvl:'bio',noTrial:true,modes:['scene'],help:'Or click the floor to place your marker.'},
     {id:'gy',label:'Your source estimate: down',type:'range',min:0,max:220,step:5,def:30,unit:' cm',lvl:'bio',noTrial:true,modes:['scene']},
     {id:'reveal',label:'Show the true source',type:'toggle',def:false,lvl:'bio',noTrial:true,modes:['scene']},
-    {id:'gz',label:'Your source estimate: height',type:'range',min:0,max:250,step:1,def:0,unit:' cm',lvl:'honors',noTrial:true,modes:['scene'],only:s=>!!s.game,help:'Height above the floor, from h = d × tan θ.'}
+    {id:'gz',label:'Your source estimate: height',type:'range',min:0,max:250,step:1,def:0,unit:' cm',lvl:'honors',noTrial:true,modes:['scene'],only:s=>!!(s.game&&s.gameRound),help:'Height above the floor, from h = d × tan θ.'}
   ],
   game:GAME,
   actions:[{id:'again',label:'Drop again',lvl:'bio',primary:true,modes:['drop'],run(sim){sim.st.key='';}}],
@@ -345,7 +345,9 @@ const BS={
   initVis(sim){},
   onClick(sim,x,y){if(sim.p.mode!=='scene')return;if(x<FL.x||x>FL.x+FL.w*FL.S||y<FL.y||y>FL.y+FL.h*FL.S)return;
     BioLab.setValues(sim,{gx:clamp(Math.round((x-FL.x)/FL.S/5)*5,0,300),gy:clamp(Math.round((y-FL.y)/FL.S/5)*5,0,220)});},
-  draw(sim,ctx,vdt,k,t){ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(0,0,800,450);const key=BioLab.level+sim.p.mode+sim.p.ptype;if(sim._sk!==key){sim._sk=key;syncMode(sim);}
+  draw(sim,ctx,vdt,k,t){ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(0,0,800,450);
+    // the game's end card needs no sliders; Full lab (setMode) restores them
+    const over=!!(sim.game&&sim.game.state==='over');if(over&&!sim._gOver&&sim.ui&&sim.ui.ctrls)sim.ui.ctrls.querySelectorAll('.ctl').forEach(w=>w.hidden=true);sim._gOver=over;const key=BioLab.level+sim.p.mode+sim.p.ptype;if(sim._sk!==key){sim._sk=key;syncMode(sim);}
     if(sim.p.mode==='pattern')drawPattern(sim,ctx,k,t);else if(sim.p.mode==='scene')drawScene(sim,ctx,k,t);else drawDrop(sim,ctx,k,t);},
   thumbSetup(sim){sim.p.angle=35;sim.p.height=150;},thumbFrames:70
 };
@@ -420,15 +422,15 @@ function drawDrop(sim,ctx,k,t){const p=sim.p,st=sim.st,m=dropModel(p),hon=atLeas
 /* Challenge angle round: the shaded evidence stain, and the student's test drop on top of it, both starting at the ruler's zero */
 function drawGameStain(sim,ctx,k,m,gr){const st=sim.st,E={W:gr.Wg,L:gr.Lg,T:gr.Tg,th:gr.ans};
   const S=gr.go?{W:m.W,L:m.L,T:m.T,th:sim.p.angle,a:sim.p.angle}:gr.shot?{W:gr.shot.W,L:gr.shot.L,T:gr.shot.T,th:gr.shot.angle,a:gr.shot.angle}:null;
-  const lay=stainLayout(S?{W:E.W,L:Math.max(E.L,S.L),T:Math.max(E.T,S.T),th:Math.min(E.th,S.th)}:E,k),s=lay.s,cy=lay.cy,left=lay.left;
+  const lay=stainLayout(S?{W:E.W,L:Math.max(E.L,S.L),T:Math.max(E.T,S.T),th:Math.min(E.th,S.th)}:E,k),s=lay.s,left=lay.left,top0=PAPR.y+44*Math.min(k,1.6),cy=Math.max(lay.cy,top0+E.W/2*s+3*s+6);
   const LL=S?Math.max(E.L+E.T,S.L+S.T):E.L+E.T;
   drawStain(ctx,left+E.L/2*s,cy,E.W,E.L,E.T,0,s,{col:'rgba(194,122,0,.32)',th:E.th});
   ctx.save();ctx.setLineDash([6,4]);ctx.strokeStyle=TRUE;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(left+E.L/2*s,cy,E.L/2*s,E.W/2*s,0,0,TAU);ctx.stroke();ctx.restore();
   if(S){const f=gr.go?(st.ph==='fall'?0:st.ph==='spread'?1-Math.pow(1-clamp(st.b/0.35,0,1),3):1):1;
     if(f>0){ctx.globalAlpha=0.85;drawStain(ctx,left+S.L/2*s,cy,S.W,S.L,S.T,0,s,{f,seed:7,th:S.th});ctx.globalAlpha=1;}}
-  ruler(ctx,left,cy+E.W/2*s+14,0,Math.ceil(LL+6),s,k);vruler(ctx,left-14,cy-E.W/2*s,Math.ceil(E.W+3),s,k);
-  const ty=PAPR.y+20*Math.min(k,1.4);ctx.fillStyle=TRUE;ctx.fillRect(PAPR.x+14,ty-10*k,14*k,10*k);txt(ctx,'Evidence stain (dashed: the oval you measure)',PAPR.x+34*Math.min(k,1.2),ty,{s:12*k,c:INK2});
-  if(S&&(!gr.go||st.ph!=='fall')){ctx.fillStyle=BLOOD;ctx.fillRect(PAPR.x+14,ty+18*k-10*k,14*k,10*k);txt(ctx,'Your test drop at '+S.a+'°',PAPR.x+34*Math.min(k,1.2),ty+18*k,{s:12*k,c:INK2});}
+  ruler(ctx,left,cy+E.W/2*s+14,0,Math.max(10,Math.min(Math.ceil(LL+6),Math.floor((PAPR.x+PAPR.w-10-left)/s-3))),s,k);vruler(ctx,left-14,cy-E.W/2*s,Math.ceil(E.W+3),s,k);
+  const ty=PAPR.y+20*Math.min(k,1.4);ctx.fillStyle=TRUE;ctx.fillRect(PAPR.x+14,ty-10*k,14*k,10*k);txt(ctx,'Evidence stain',PAPR.x+20+14*k,ty,{s:12*k,c:INK2});
+  if(S&&(!gr.go||st.ph!=='fall')){ctx.fillStyle=BLOOD;ctx.fillRect(PAPR.x+14,ty+18*k-10*k,14*k,10*k);txt(ctx,'Your test drop at '+S.a+'°',PAPR.x+20+14*k,ty+18*k,{s:12*k,c:INK2});}
   const by=PAPR.y+PAPR.h-14;arrow(ctx,PAPR.x+18,by-4,PAPR.x+58,by-4,INK2,2);txt(ctx,'direction of travel',PAPR.x+66,by,{s:12*k,c:INK2});}
 
 /* ---------- drawing: pattern types ---------- */
@@ -487,7 +489,7 @@ function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honor
     ctx.fillStyle='rgba(251,250,246,.85)';ctx.beginPath();ctx.arc(lx,ly,8*k,0,TAU);ctx.fill();txt(ctx,String(s.n),lx,ly+1,{s:12*k,w:700,c:INK,a:'center',b:'middle'});});
   // guess and truth
   const gx=fx(p.gx),gy=fy(p.gy);if(!(gH&&!gr.conv)){ctx.strokeStyle=GUESS;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(gx,gy,10,0,TAU);ctx.moveTo(gx-16,gy);ctx.lineTo(gx+16,gy);ctx.moveTo(gx,gy-16);ctx.lineTo(gx,gy+16);ctx.stroke();
-  if(k<1.35)txt(ctx,'your estimate',gx+14,gy-12,{s:12,w:700,c:GUESS});}
+  if(k<1.35){const lr=p.gx>220;txt(ctx,'your estimate',gx+(lr?-14:14),gy-12,{s:12,w:700,c:GUESS,a:lr?'right':'left'});}}
   if(p.reveal)sc.srcs.forEach(q=>{const x=fx(q.x),y=fy(q.y);ctx.fillStyle=TRUE;ctx.beginPath();for(let i=0;i<10;i++){const r=i%2?5:12,a=-Math.PI/2+i*Math.PI/5;ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a));}ctx.closePath();ctx.fill();
     txt(ctx,'source'+(sc.srcs.length>1?' '+q.id:'')+(ap?' · '+q.z+' cm up':''),x+14,y+18,{s:12*k,w:700,c:'#8a5600'});});
   // side panel: selected stain
@@ -501,7 +503,7 @@ function drawScene(sim,ctx,k,t){const p=sim.p,sc=sceneOf(sim),hon=atLeast('honor
     const x0=bx+bw,x1=x0-dC*sx,yb=bot,yt=bot-hE*sx;ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,yb);ctx.lineTo(x0,yb);ctx.stroke();
     ctx.strokeStyle=STRING;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,yb);ctx.lineTo(x1,yt);ctx.stroke();ctx.setLineDash([4,3]);ctx.strokeStyle=CONV;ctx.beginPath();ctx.moveTo(x1,yb);ctx.lineTo(x1,yt);ctx.stroke();ctx.setLineDash([]);
     if(p.reveal||(gH&&gr.shown&&ap)){const q=sc.srcs[sel.g],yq=bot-q.z*sx;ctx.fillStyle=TRUE;ctx.beginPath();ctx.arc(x1,yq,5,0,TAU);ctx.fill();}
-    txt(ctx,'d = '+Math.round(dC)+' cm',(x0+x1)/2,yb+16*k,{s:12*k,c:PAL['cv-soft'],a:'center'});txt(ctx,gH&&!gr.shown?'h = ?':'h = '+Math.round(hE)+' cm',x1+6,Math.max(top+12,(yb+yt)/2),{s:12*k,w:700,c:PAL['cv-ink']});}
+    txt(ctx,'d = '+Math.round(dC)+' cm',(x0+x1)/2,yb+16*k,{s:12*k,c:PAL['cv-soft'],a:'center'});const gq=gH&&gr.hs.find(q=>q.n===sel.n);txt(ctx,gH&&!gr.shown?'h = ?':'h = '+Math.round(gq?gq.h:hE)+' cm',x1+6,Math.max(top+12,(yb+yt)/2),{s:12*k,w:700,c:PAL['cv-ink']});}
 }
 BS.onLevel=syncMode;BS.controls[0].onChange=sim=>{syncMode(sim);sim.infoDirty=true;};
 BS.controls.find(c=>c.id==='ptype').onChange=sim=>syncMode(sim);
