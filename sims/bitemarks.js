@@ -327,7 +327,7 @@ function drawArch(sim,ctx,k){const p=sim.p,hon=atLeast('honors'),ap=atLeast('ap'
       const r=6+w*1.45;ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(dir*b*Math.cos(ph),a*Math.sin(ph)));
       ctx.fillStyle=n===sel?PAL['rj']:(hon&&front?'#f4e7c8':'#ecebe4');ctx.strokeStyle=n===sel?PAL['rj']:'#8d8a80';ctx.lineWidth=n===sel?3:1.4;
       rr(ctx,-r*0.55,-r*(pos>=6?0.62:pos>=4?0.52:0.42),r*1.1,r*(pos>=6?1.24:pos>=4?1.04:0.84),pos>=4?6:4);ctx.fill();ctx.stroke();ctx.restore();
-      if(k>1.35&&n!==sel&&![1,8,9,16,17,24,25,32].includes(n))return;const lab=p.system==='fdi'&&ap?fdi(n):String(n);
+      if(k>1.35&&n!==sel&&![1,8,9,16,17,24,32].includes(n))return;const lab=p.system==='fdi'&&ap?fdi(n):String(n);
       const ox=cx+(a-r*1.05-14*k)*(-Math.cos(ph)),oy=cy+dir*(b-r*1.05-14*k)*Math.sin(ph);txt(ctx,lab,ox,oy,{s:(n===sel?13:12)*k,w:n===sel?700:500,a:'center',b:'middle',c:n===sel?PAL['rj']:PAL['cv-soft']});});});
   txt(ctx,'Upper jaw',cx,cyU-30,{s:13*k,w:700,a:'center'});txt(ctx,'Lower jaw',cx,cyL+40,{s:13*k,w:700,a:'center'});
   txt(ctx,'Patient’s right',cx-a+10,22,{s:12*k,c:PAL['cv-soft']});txt(ctx,'Patient’s left',cx+a-10,22,{s:12*k,c:PAL['cv-soft'],a:'right'});
@@ -347,9 +347,10 @@ function drawCompare(sim,ctx,k){const C=fullCase(sim),i=sim.p.suspect,f=C.fit[i]
   f.list.forEach(([n,ok])=>{const e=tooth(C.ev,n);const pnt=T(e.c),dy=n<=16?-(e.th*S/2+11):(e.th*S/2+11);ctx.fillStyle=ok?PAL['s3']:PAL['s1'];ctx.beginPath();ctx.arc(pnt[0],pnt[1]+dy,5,0,TAU);ctx.fill();});
   txt(ctx,'Evidence in an apple, Suspect '+SUS[i]+'’s acetate on top',20,22,{s:13*k,w:700});sideTags(ctx,k);
   const ty=30,th=(360-3*8)/4;SUS.forEach((l,j)=>{const y=ty+j*(th+8),sel=j===i;ctx.fillStyle=PAL['card'];rr(ctx,PX,y,PW,th,10);ctx.fill();ctx.strokeStyle=sel?PAL['rj']:PAL['line'];ctx.lineWidth=sel?3:1;ctx.stroke();
-    txt(ctx,'Suspect '+l,PX+12,y+20*Math.min(k,1.3),{s:14*k,w:700});txt(ctx,C.imp[j].icdU.toFixed(1)+' mm · '+C.fit[j].n+'/12',PX+12,y+20*Math.min(k,1.3)+16*k,{s:12.5*k,c:PAL['cv-soft']});
-    txt(ctx,verdict(C,j),PX+PW-10,y+20*Math.min(k,1.3),{s:12*k,w:700,a:'right',c:C.fit[j].n>=10?PAL['s3']:PAL['s1']});});
-  legendRow(ctx,[[0,'lines up',PAL['s3']],[0,'does not',PAL['s1']],[0,'tracing','#1f4fd1']],PX+4,404,PX+PW,k);}
+    const ok=C.fit[j].n>=10,y1=y+20*Math.min(k,1.3);if(k>1.35){txt(ctx,l+': '+(ok?'not excluded':'excluded'),PX+12,y1,{s:13*k,w:700,c:ok?PAL['s3']:PAL['s1']});}
+    else{txt(ctx,'Suspect '+l,PX+12,y1,{s:14*k,w:700});txt(ctx,verdict(C,j),PX+PW-10,y1,{s:12*k,w:700,a:'right',c:ok?PAL['s3']:PAL['s1']});}
+    txt(ctx,C.imp[j].icdU.toFixed(1)+' mm · '+C.fit[j].n+'/12',PX+12,y1+16*k,{s:12.5*k,c:PAL['cv-soft']});});
+  legendRow(ctx,k>1.35?[[0,'lines up',PAL['s3']],[0,'does not',PAL['s1']]]:[[0,'lines up',PAL['s3']],[0,'does not',PAL['s1']],[0,'tracing','#1f4fd1']],PX+4,404,PX+PW,k);}
 
 /* ---------- the virtual lab bench ---------- */
 function drawBench(sim,ctx,k){const V=sim.vlab,C=vCase(V),p=sim.p,B=V.bench,view=p.bmView;

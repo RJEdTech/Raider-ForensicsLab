@@ -146,7 +146,7 @@ const LP={
   step(){},
   metrics:[
     {id:'tname',label:'This type',unit:'',lvl:'bio',text:true,modes:['types'],get:s=>'Type '+TN[s.p.type]+': '+TD[s.p.type]},
-    {id:'dom',label:'Most common type in this print',unit:'',lvl:'bio',text:true,modes:['print'],get:s=>{const P=fullPerson(s),c={};QS.forEach(q=>c[P.types[q]]=(c[P.types[q]]||0)+1);const t=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return 'Type '+TN[t]+' ('+c[t]+' of 4 quadrants)';}},
+    {id:'dom',label:'Most common type in this print',unit:'',lvl:'bio',text:true,modes:['print'],get:s=>{const P=fullPerson(s),c={};QS.forEach(q=>c[P.types[q]]=(c[P.types[q]]||0)+1);const t=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return c[t]<2?'Each quadrant has a different type':'Type '+TN[t]+' ('+c[t]+' of 4 quadrants)';}},
     {id:'code',label:'Classification',unit:'',lvl:'honors',text:true,modes:['print'],get:s=>code(fullPerson(s))},
     {id:'wpor',label:'Surface',unit:'',lvl:'bio',text:true,modes:['where'],get:s=>WHERE[s.p.surface].por?'Porous: soaks things up':'Nonporous: the print sits on top'},
     {id:'wdna',label:'DNA source',unit:'',lvl:'bio',text:true,modes:['where'],get:s=>WHERE[s.p.surface].dna},
@@ -263,8 +263,9 @@ function drawCompare(sim,ctx,k){const C=fullCase(sim),i=sim.p.suspect,E=C.sus[C.
   if(hon){const q=sim.p.cquad,zr=k>1.35?80:92;loupe(ctx,E,oE,q,150,330,zr,3.6/sc*SC*0.6,k,'');loupe(ctx,S,oS,q,420,330,zr,3.6/sc*SC*0.6,k,'');txt(ctx,'Magnifier: '+q,285,226,{s:12.5*k,w:700,a:'center',b:'middle'});}
   else textBlock(ctx,[{t:'Green: same type as the evidence. Red: a different type.',s:13,c:PAL['cv-soft']},{t:'Closer look adds a magnifier to compare the grooves themselves.',s:13,c:PAL['cv-soft']}],30,240,520,430,k);
   const ty=30,th=(400-3*8)/4;SUS.forEach((l,j)=>{const y=ty+j*(th+8),sel=j===i;ctx.fillStyle=PAL['card'];rr(ctx,PX,y,PW,th,10);ctx.fill();ctx.strokeStyle=sel?PAL['rj']:PAL['line'];ctx.lineWidth=sel?3:1;ctx.stroke();
-    txt(ctx,'Suspect '+l,PX+12,y+22*Math.min(k,1.3),{s:14*k,w:700});txt(ctx,agreeN(C,j)+' of 4 types agree',PX+12,y+22*Math.min(k,1.3)+17*k,{s:12.5*k,c:PAL['cv-soft']});
-    const v=verdict(C,j);txt(ctx,v.startsWith('Cannot')?'Not excluded':'Excluded',PX+PW-10,y+22*Math.min(k,1.3),{s:12*k,w:700,a:'right',c:v.startsWith('Cannot')?PAL['s3']:PAL['s1']});});}
+    const ok=verdict(C,j).startsWith('Cannot'),y1=y+22*Math.min(k,1.3);if(k>1.35)txt(ctx,l+': '+(ok?'not excluded':'excluded'),PX+12,y1,{s:13*k,w:700,c:ok?PAL['s3']:PAL['s1']});
+    else{txt(ctx,'Suspect '+l,PX+12,y1,{s:14*k,w:700});txt(ctx,ok?'Not excluded':'Excluded',PX+PW-10,y1,{s:12*k,w:700,a:'right',c:ok?PAL['s3']:PAL['s1']});}
+    txt(ctx,agreeN(C,j)+' of 4 types agree',PX+12,y1+17*k,{s:12.5*k,c:PAL['cv-soft']});});}
 
 /* ---------- the virtual lab bench ---------- */
 function drawLips(ctx,cx,cy,sc,col){ctx.save();ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.fillStyle='#e2b49a';rr(ctx,-W/2-14,-HU-12,W+28,HU+HL+24,14);ctx.fill();ctx.fillStyle=col;lipPath(ctx);ctx.fill();ctx.strokeStyle='rgba(80,30,30,.5)';ctx.lineWidth=0.3;lipPath(ctx);ctx.stroke();ctx.restore();}
