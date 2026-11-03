@@ -119,11 +119,11 @@ function markPath(ctx,t,grow){const a=T(t.p1),b=T(t.p2),dx=b[0]-a[0],dy=b[1]-a[1
 function drawSurface(ctx,M,surf){const all=M.U.concat(M.L);
   if(surf==='foam'){[[-1,60,200],[1,262,402]].forEach(([s,y0,y1])=>{ctx.fillStyle='rgba(0,0,0,.16)';rr(ctx,128,y0+5,350,y1-y0,10);ctx.fill();ctx.fillStyle='#f3f3ee';rr(ctx,124,y0,350,y1-y0,10);ctx.fill();ctx.strokeStyle='#c9c9c0';ctx.lineWidth=1.5;ctx.stroke();
       ctx.fillStyle='rgba(160,160,150,.25)';for(let i=0;i<70;i++){const x=134+((i*53)%330),y=y0+8+((i*29)%(y1-y0-16));ctx.beginPath();ctx.arc(x,y,2.2,0,TAU);ctx.fill();}});return;}
-  if(surf==='apple'){ctx.fillStyle='#b8262f';ctx.beginPath();ctx.ellipse(CX,CY,250,214,0,0,TAU);ctx.fill();ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.ellipse(CX-120,CY-110,60,34,-0.6,0,TAU);ctx.fill();
+  if(surf==='apple'){ctx.fillStyle='#b8262f';ctx.beginPath();ctx.ellipse(CX,CY,250,200,0,0,TAU);ctx.fill();ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.ellipse(CX-130,CY-110,60,34,-0.6,0,TAU);ctx.fill();
     ctx.fillStyle='rgba(255,220,120,.25)';for(let i=0;i<40;i++){const a=i*2.4,rad=60+((i*37)%170);ctx.beginPath();ctx.arc(CX+Math.cos(a)*rad*1.1,CY+Math.sin(a)*rad*0.9,1.6,0,TAU);ctx.fill();}}
-  else if(surf==='cheese'){ctx.fillStyle='#e9b93c';rr(ctx,64,30,476,404,16);ctx.fill();ctx.strokeStyle='#c99a24';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='rgba(170,120,20,.35)';
+  else if(surf==='cheese'){ctx.fillStyle='#e9b93c';rr(ctx,64,34,476,400,16);ctx.fill();ctx.strokeStyle='#c99a24';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='rgba(170,120,20,.35)';
     [[100,70,14],[500,90,18],[90,380,20],[480,400,12],[520,250,10],[80,230,9]].forEach(([x,y,r])=>{ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();});}
-  else{ctx.fillStyle='#d49a76';rr(ctx,40,24,520,412,30);ctx.fill();ctx.strokeStyle='rgba(120,60,40,.25)';ctx.lineWidth=1;for(let i=0;i<14;i++){ctx.beginPath();ctx.moveTo(60,50+i*28);ctx.quadraticCurveTo(300,40+i*28+12,540,52+i*28);ctx.stroke();}}
+  else{ctx.fillStyle='#d49a76';rr(ctx,40,34,520,402,30);ctx.fill();ctx.strokeStyle='rgba(120,60,40,.25)';ctx.lineWidth=1;for(let i=0;i<14;i++){ctx.beginPath();ctx.moveTo(60,50+i*28);ctx.quadraticCurveTo(300,40+i*28+12,540,52+i*28);ctx.stroke();}}
   // the bitten area inside the ring of marks
   const up=M.U.slice().sort((a,b)=>a.c[0]-b.c[0]),lo=M.L.slice().sort((a,b)=>b.c[0]-a.c[0]);
   if(surf==='skin'){ctx.fillStyle='rgba(150,60,80,.18)';}else ctx.fillStyle=surf==='apple'?'#f1e3bd':'#f6d77a';
@@ -387,9 +387,9 @@ function bindDrag(sim){const cv=sim.ui&&sim.ui.stage;if(!cv||cv._bmDrag)return;c
   const tick=()=>{const want=on()?'none':'';if(cv.style.touchAction!==want){cv.style.touchAction=want;cv.style.cursor=want?'grab':'';}};cv.addEventListener('pointerenter',tick);sim._dragTick=tick;}
 
 /* ---------- the virtual lab: Bite mark comparison (Forensic Science, Glugoski) ---------- */
-const ROWS=['E','A','B','C','D'],RL=['Evidence','Suspect A','Suspect B','Suspect C','Suspect D'];
+const RL=['Evidence','Suspect A','Suspect B','Suspect C','Suspect D'],ROWS=RL,RID=n=>n==='Evidence'?'E':String(n).slice(-1);
 const cv=sim=>{const V=sim.vlab;return V?vCase(V):null;};
-function cellCheck(feat){return (sim,row,v)=>{const V=sim.vlab,C=cv(sim);if(!C)return null;const M=subjM(C,row),tr=truthOf(M,feat);
+function cellCheck(feat){return (sim,row,v)=>{const V=sim.vlab,C=cv(sim);if(!C)return null;row=RID(row);const M=subjM(C,row),tr=truthOf(M,feat);
   if(tr===0)return v===0?null:'Look at this mark again. Type 0 for a tooth that left no mark.';if(v===0)return 'This tooth does leave a mark. Measure its width.';
   const ref=caliper(V,C,row,feat);if(Math.abs(v-ref)>0.6)return 'This does not match the mark on the bench. Put the caliper or ruler on it and read it again.';return null;};}
 function startOv(sim){const r=rng(hash(sim.vlab.seed+'|ov|'+sim.p.bmSus));BioLab.setValues(sim,{ovX:Math.round((7+5*r())*(r()<0.5?-1:1)*10)/10,ovY:Math.round((4+5*r())*(r()<0.5?-1:1)*10)/10,ovR:Math.round((3+6*r())*(r()<0.5?-1:1)*2)/2});}
@@ -423,12 +423,12 @@ const LAB_BM={id:'bitemark-compare',title:'Lab 1: Bite Marks',course:'Forensic S
     {title:'Analyze and conclude',text:'<p>Do the calculations from your own tables. Compare the spread of your repeat measurements with the differences between suspects. Then answer the questions and write your conclusion, including how confident you are and the limitations of this evidence.</p>',controls:['bmView','bmSus','bmMeas','bmTool','ovX','ovY','ovR'],setup(sim){SET(sim,{});}}
   ],
   tables:[
-    {id:'t1',title:'Arch measurements and features',cols:[{id:'s',label:'Bite',rows:ROWS,rowLabels:RL},
+    {id:'t1',title:'Arch measurements and features',cols:[{id:'s',label:'',rows:ROWS},
       {id:'icdU',label:'Upper intercanine (mm)',dp:2,check:(sim,row,v)=>cellCheck('icdU')(sim,row,v)},{id:'icdL',label:'Lower intercanine (mm)',dp:2,check:(sim,row,v)=>cellCheck('icdL')(sim,row,v)},
-      {id:'shape',label:'Arch shape',input:'select',options:[{v:'U',l:'U (rounded)'},{v:'V',l:'V (pointed)'},{v:'square',l:'Square'}],check(sim,row,v){const C=cv(sim);if(!C)return null;const d=row==='E'?C.sus[C.src]:C.sus[SUS.indexOf(row)];return d.shape===v?null:'Look at the curve of the front teeth again: is the front rounded, pointed or flat?';}},
+      {id:'shape',label:'Arch shape',input:'select',options:[{v:'U',l:'U (rounded)'},{v:'V',l:'V (pointed)'},{v:'square',l:'Square'}],check(sim,row,v){const C=cv(sim);if(!C)return null;row=RID(row);const d=row==='E'?C.sus[C.src]:C.sus[SUS.indexOf(row)];return d.shape===v?null:'Look at the curve of the front teeth again: is the front rounded, pointed or flat?';}},
       {id:'feat',label:'Distinctive features (by tooth number)',input:'text',check(sim,row,v){return /\d|none|no /i.test(v)?null:'Name each feature with its tooth number, for example “tooth 10 chipped”, or write “none”.';}}]},
-    {id:'t2',title:'Upper front teeth: width of each mark (mm)',cols:[{id:'s',label:'Bite',rows:ROWS,rowLabels:RL}].concat(UP.map(n=>({id:'w'+n,label:String(n),dp:2,check:(sim,row,v)=>cellCheck('t'+n)(sim,row,v)})))},
-    {id:'t3',title:'Lower front teeth: width of each mark (mm)',cols:[{id:'s',label:'Bite',rows:ROWS,rowLabels:RL}].concat(LO.map(n=>({id:'w'+n,label:String(n),dp:2,check:(sim,row,v)=>cellCheck('t'+n)(sim,row,v)})))},
+    {id:'t2',title:'Upper front teeth: width of each mark (mm)',cols:[{id:'s',label:'',rows:ROWS}].concat(UP.map(n=>({id:'w'+n,label:String(n),dp:2,check:(sim,row,v)=>cellCheck('t'+n)(sim,row,v)})))},
+    {id:'t3',title:'Lower front teeth: width of each mark (mm)',cols:[{id:'s',label:'',rows:ROWS}].concat(LO.map(n=>({id:'w'+n,label:String(n),dp:2,check:(sim,row,v)=>cellCheck('t'+n)(sim,row,v)})))},
     {id:'t4',title:'Repeat measurement: evidence upper intercanine (mm)',cols:[{id:'r',label:'Trial',rows:[1,2,3]},{id:'v',label:'Upper intercanine (mm)',dp:2,check(sim,row,v){const r=(sim.vlab.bench.rep||[])[row-1];if(r===undefined)return 'Re-seat the caliper and read it before you record trial '+row+'.';return Math.abs(v-r)>0.06?'That is not what the caliper read for trial '+row+'. Check the number you copied.':null;}}]},
     {id:'t5',title:'Overlay comparison',cols:[{id:'s',label:'Suspect',rows:SUS,rowLabels:SUS.map(l=>'Suspect '+l)},
       {id:'n',label:'Front teeth that line up (of 12)',dp:0,check(sim,row,v){const C=cv(sim);if(!C)return null;if(!(sim.vlab.bench.ov||{})[row])return 'Trace Suspect '+row+'’s impression and lay it on the evidence first.';if(v<0||v>12||v!==Math.round(v))return 'Enter a whole number from 0 to 12.';return Math.abs(v-C.fit[SUS.indexOf(row)].n)>1?'Look at the overlay again. Count only the teeth whose tracing sits on the evidence mark.':null;}},

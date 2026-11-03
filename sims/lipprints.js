@@ -280,9 +280,9 @@ function drawBench(sim,ctx,k){const V=sim.vlab,C=vCase(V),p=sim.p,B=V.bench,v=p.
       status=[{t:st===0?'A faint print on the rim.':st===1?'Rim swabbed for DNA.':'Print dusted with black powder.',s:14,w:700},{t:st===0?'Swab the rim for DNA before anything touches it.':st===1?'Now dust the print with black powder.':'Lift it with clear tape onto a white card.',s:13,c:PAL['cv-soft']}];}
     else{printCard(ctx,CX,CY,SC);P=C.sus[C.src];o={cx:CX,cy:CY,sc:SC,ink:POW,paper:PAPER,clip:true,smear:C.smear,sx:C.sx};drawPrint(ctx,P,o);}}
   else if(v==='suspect'){title='Suspect '+p.lpSus+': known print';printCard(ctx,CX,CY,SC);P=C.sus[SUS.indexOf(p.lpSus)];o={cx:CX,cy:CY,sc:SC,ink:LIP,paper:PAPER};drawPrint(ctx,P,o);}
-  else{const E=C.sus[C.src],S=C.sus[SUS.indexOf(p.lpSus)],q=p.lpQuad,zr=k>1.35?120:136;const oE={cx:0,cy:0,sc:SC,ink:POW,paper:PAPER,clip:true,smear:C.smear,sx:C.sx},oS={cx:0,cy:0,sc:SC,ink:LIP,paper:PAPER};
+  else{const E=C.sus[C.src],S=C.sus[SUS.indexOf(p.lpSus)],q=p.lpQuad,zr=k>1.35?116:124;const oE={cx:0,cy:0,sc:SC,ink:POW,paper:PAPER,clip:true,smear:C.smear,sx:C.sx},oS={cx:0,cy:0,sc:SC,ink:LIP,paper:PAPER};
     if(!(B.ev>=3)){txt(ctx,'Lift the evidence print first.',CX,CY,{s:15*k,w:700,a:'center'});}
-    else{loupe(ctx,E,oE,q,150,250,zr,2.2,k,'Evidence');loupe(ctx,S,oS,q,430,250,zr,2.2,k,'Suspect '+p.lpSus);}
+    else{loupe(ctx,E,oE,q,148,250,zr,2.2,k,'Evidence');loupe(ctx,S,oS,q,416,250,zr,2.2,k,'Suspect '+p.lpSus);}
     txt(ctx,'Side by side: '+QN[q]+' quadrant',20,24,{s:14*k,w:700});
     panel(ctx,PX,30,PW,400);textBlock(ctx,[{t:'Compare the detail',s:14,w:700},{t:'Look for the same grooves in the same places: where they branch, where they cross, where they stop.',s:13},{t:'Check all four quadrants before you decide.',s:13,c:PAL['cv-soft']}],PX+14,44,PW-28,424,k);return;}
   txt(ctx,title,20,24,{s:14*k,w:700});
@@ -293,10 +293,10 @@ function drawBench(sim,ctx,k){const V=sim.vlab,C=vCase(V),p=sim.p,B=V.bench,v=p.
   else{panel(ctx,PX,30,PW,400);textBlock(ctx,status,PX+14,44,PW-28,424,k);}}
 
 /* ---------- the virtual lab: Lab 3: Cheiloscopy (Forensic Science, Glugoski) ---------- */
-const ROWS=['R','E','A','B','C','D'],RL=['Your reference print','Evidence (glass rim)','Suspect A','Suspect B','Suspect C','Suspect D'];
+const RL=['Your reference print','Evidence (glass rim)','Suspect A','Suspect B','Suspect C','Suspect D'],ROWS=RL,RID=n=>n===RL[0]?'R':n===RL[1]?'E':String(n).slice(-1);
 const TOPT=TYPES.map(t=>({v:t,l:'Type '+TN[t]}));
 const cv=sim=>sim.vlab?vCase(sim.vlab):null;
-function typeCheck(q){return (sim,row,v)=>{const C=cv(sim);if(!C)return null;const B=sim.vlab.bench;
+function typeCheck(q){return (sim,row,v)=>{const C=cv(sim);if(!C)return null;const B=sim.vlab.bench;row=RID(row);
   if(row==='R'&&!(B.ref>=3))return 'Make your reference print on the index card first.';if(row==='E'&&!(B.ev>=3))return 'Lift the evidence print onto a card first.';
   const P=row==='R'?C.ref:row==='E'?C.sus[C.src]:C.sus[SUS.indexOf(row)];if(v===P.types[q])return null;if(row==='E'&&C.smear===q&&v==='V')return null;
   return 'Look at this quadrant again through the magnifier. Which pattern do most of the grooves follow?';};}
@@ -325,9 +325,9 @@ const LAB_LP={id:'lipprint-match',title:'Lab 3: Cheiloscopy',course:'Forensic Sc
     {title:'Conclude',text:'<p>Use your tables and the graph to answer the questions. Then write your conclusion, with your confidence and the limitations of lip-print evidence.</p>',controls:['lpView','lpSus','lpQuad']}
   ],
   tables:[
-    {id:'t1',title:'Dominant groove type in each quadrant',cols:[{id:'p',label:'Print',rows:ROWS,rowLabels:RL}].concat(QS.map(q=>({id:q,label:QN[q][0].toUpperCase()+QN[q].slice(1)+' ('+q+')',input:'select',options:TOPT,check:typeCheck(q)})))},
+    {id:'t1',title:'Dominant groove type in each quadrant',cols:[{id:'p',label:'',rows:ROWS}].concat(QS.map(q=>({id:q,label:QN[q][0].toUpperCase()+QN[q].slice(1)+' ('+q+')',input:'select',options:TOPT,check:typeCheck(q)})))},
     {id:'t2',title:'Comparison with the evidence',cols:[{id:'s',label:'Suspect',rows:SUS,rowLabels:SUS.map(l=>'Suspect '+l)},
-      {id:'agree',label:'Quadrants with the same type (0–4)',dp:0,check(sim,row,v){const V=sim.vlab;if(!V)return null;const rs=ROWS.indexOf(row);
+      {id:'agree',label:'Quadrants with the same type (0–4)',dp:0,check(sim,row,v){const V=sim.vlab;if(!V)return null;const rs=2+SUS.indexOf(row);
         if(!rowFull(V,1)||!rowFull(V,rs))return 'Classify all four quadrants of the evidence and of Suspect '+row+' first.';const n=QS.filter(q=>V.raw('c:t1:'+q+':1')===V.raw('c:t1:'+q+':'+rs)).length;
         return v===n?null:'Count again from your table: in how many quadrants is Suspect '+row+'’s type the same as the evidence?';}},
       {id:'detail',label:'Groove detail under the magnifier',input:'select',options:[{v:'agrees',l:'Agrees'},{v:'differs',l:'Differs'},{v:'unclear',l:'Cannot tell'}]},
