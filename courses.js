@@ -14,11 +14,11 @@ BioLab.COURSES = [
     blurb: 'Tools in the order Forensic Science covers them, ending with digital forensics and a full case to solve.',
     units: [
       { n: 'Unit 1', t: 'What is forensics? The crime scene', ids: ['crimescene'] },
-      { n: 'Unit 2', t: 'Fingerprinting', ids: ['fingerprints'] },
+      { n: 'Unit 2', t: 'Fingerprinting', ids: ['fingerprints', 'lipprints'] },
       { n: 'Unit 3', t: 'Poisons and toxicology', ids: ['toxicology', 'spottest', 'chromatography', 'spectroscopy'] },
       { n: 'Unit 4', t: 'Death, decomposition and time of death', ids: ['timeofdeath'] },
       { n: 'Unit 5', t: 'Handwriting, questioned documents and trace evidence', ids: ['handwriting', 'hairfiber'] },
-      { n: 'Unit 6', t: 'Facial reconstruction and forensic anthropology', ids: ['anthropology'] },
+      { n: 'Unit 6', t: 'Facial reconstruction and forensic anthropology', ids: ['anthropology', 'bitemarks'] },
       { n: 'Unit 7', t: 'Blood spatter and DNA', ids: ['bloodspatter', 'dna'] },
       { n: 'Unit 8', t: 'Digital evidence: preserving and examining it', ids: ['hashing', 'filesig', 'metadata', 'recovery'] },
       { n: 'Unit 9', t: 'Cybercrime: how attacks leave clues', ids: ['passwords', 'phishing', 'stego', 'logs'] },
@@ -44,8 +44,8 @@ BioLab.COURSES = [
 
 BioLab.TOPIC_ORDER = {
   6: ['crimescene'],
-  16: ['fingerprints', 'toxicology', 'spottest', 'chromatography', 'spectroscopy'],
-  8: ['handwriting', 'hairfiber'],
+  16: ['fingerprints', 'lipprints', 'toxicology', 'spottest', 'chromatography', 'spectroscopy'],
+  8: ['handwriting', 'hairfiber', 'bitemarks'],
   9: ['timeofdeath', 'anthropology'],
   7: ['bloodspatter', 'dna'],
   18: ['hashing', 'filesig', 'metadata', 'recovery', 'passwords', 'phishing', 'stego', 'casefile'],
