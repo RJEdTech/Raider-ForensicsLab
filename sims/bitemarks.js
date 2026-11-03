@@ -310,7 +310,8 @@ const BM={
     if(isLab(sim)){drawBench(sim,ctx,k);return;}const m=sim.p.mode;if(m==='arch')drawArch(sim,ctx,k);else if(m==='compare')drawCompare(sim,ctx,k);else drawBite(sim,ctx,k);},
   thumbSetup(sim){sim.p.mode='bite';sim.p.surface='apple';sim.p.feature='rot';},thumbFrames:4,
   benchRead(sim){if(!isLab(sim))return null;const V=sim.vlab,C=vCase(V),p=sim.p,B=V.bench,subj=p.bmView==='evidence'?'E':p.bmSus;
-    return {view:p.bmView,subj,meas:p.bmMeas,tool:p.bmTool,reading:p.bmView==='overlay'?null:(B.phase==='rep'&&subj==='E'&&p.bmMeas==='icdU'?((B.rep||[]).slice(-1)[0]??null):caliper(V,C,subj,p.bmMeas)),
+    const Mx=p.bmView==='overlay'?null:subjM(C,subj),noMark=!!(Mx&&p.bmMeas[0]==='t'&&tooth(Mx,+p.bmMeas.slice(1)).missing);
+    return {view:p.bmView,subj,meas:p.bmMeas,tool:p.bmTool,noMark,reading:p.bmView==='overlay'?null:(B.phase==='rep'&&subj==='E'&&p.bmMeas==='icdU'?((B.rep||[]).slice(-1)[0]??null):caliper(V,C,subj,p.bmMeas)),
       rep:(B.rep||[]).slice(),traced:Object.assign({},B.ov||{}),fit:SUS.map((l,i)=>C.fit[i].n),food:C.food,close:C.close,src:SUS[C.src],near:C.near>=0?SUS[C.near]:null,
       shapes:{E:C.sus[C.src].shape,A:C.sus[0].shape,B:C.sus[1].shape,C:C.sus[2].shape,D:C.sus[3].shape},feats:{E:featsText(C.sus[C.src]),A:featsText(C.sus[0]),B:featsText(C.sus[1]),C:featsText(C.sus[2]),D:featsText(C.sus[3])}};}
 };
