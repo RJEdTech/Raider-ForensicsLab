@@ -113,3 +113,10 @@ BioLab.register(SIM);
 - **Units and sig figs.** Readouts carry units and a sensible number of significant figures. Measurement tools show the instrument's real precision (e.g. a 10 mL graduated cylinder reads to 0.1 mL, with one estimated digit).
 - **Safety framing.** Virtual labs that use hazardous materials say so in one plain line (goggles, fume hood, never taste), the way RJ labs do. Never give real-world instructions for making something dangerous.
 - **Chemical text.** Use proper subscripts, superscripts, charges, arrows (→, ⇌) and state symbols (s), (l), (g), (aq). Write "mol", "g/mol", "M", "kJ/mol".
+
+## Review questions and unit paths
+Add questions in `review.js` with `BioLab.addReview({<id>:{apNote,ap:[{title,url,note}],questions:[...]}})`. A tool with an entry gets a **Review** mode, which also opens with `#<hash>@review`.
+
+Each question has `id`, `kind` (`real`, `test` or `ap`), `lvl`, `q`, `steps` (worked solution), and either `choices` + `correct` or `num:{ans,tol,unit}`. Add `lab:{set,act,look}` for the "See it in the lab" button: `set` is control values, `act` an action id, `look` tells students what to read. `verify`, `verifyAbove` and `wait` are read only by the test script, to check answers against the model.
+
+Unit paths need no setup: `#u-<courseId>-<unitIndex>` is built from `courses.js`. A tool page opened from a path uses `#<hash>@<mode>@u-<courseId>-<unitIndex>`.
