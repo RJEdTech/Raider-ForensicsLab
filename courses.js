@@ -48,6 +48,6 @@ BioLab.TOPIC_ORDER = {
   8: ['handwriting', 'hairfiber', 'bitemarks'],
   9: ['timeofdeath', 'anthropology'],
   7: ['bloodspatter', 'dna'],
-  18: ['hashing', 'filesig', 'metadata', 'recovery', 'passwords', 'phishing', 'stego', 'casefile'],
+  18: ['hashing', 'filesig', 'metadata', 'recovery', 'passwords', 'phishing', 'stego', 'facematch', 'casefile'],
   20: ['binary', 'internet', 'pubkey', 'risk', 'firewall', 'logs']
 };
