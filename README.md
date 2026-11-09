@@ -14,3 +14,7 @@ Link straight to a tool with `#<name>` (e.g. `#bloodspatter`, `#casefile`) or to
 
 ## Files
 - `index.html`, `biolab.css`, `engine.js` (shared lab bench), `chemdata.js` (chemistry helpers), `courses.js` (sections and pathways), `sims/*.js` (one file per tool), `ENGINE.md` (authoring guide).
+
+## License
+
+© 2026 Jason Beyer, RJ Ed Tech. Licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): free to share and adapt for non-commercial use with credit. See [LICENSE](LICENSE).
