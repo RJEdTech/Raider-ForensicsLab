@@ -10,7 +10,7 @@ BioLab.setSections({
 });
 
 BioLab.COURSES = [
-  { id: 'forensic', name: 'Forensic Science',
+  { id: 'forensic',finals:[{"t": "Forensic Science fall final review", "units": [0, 1, 2, 3, 4, 5], "note": "Covers Units 1 to 6, from the crime scene through facial reconstruction. Your teacher decides what is on the final, so check the study guide."}], name: 'Forensic Science',
     blurb: 'Tools in the order Forensic Science covers them, ending with digital forensics and a full case to solve.',
     units: [
       { n: 'Unit 1', t: 'What is forensics? The crime scene', ids: ['crimescene'] },
