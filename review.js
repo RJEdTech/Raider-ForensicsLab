@@ -80,7 +80,7 @@ fingerprints:{questions:[
     choices:['Arch','Whorl','Accidental','Loop'],correct:3,
     steps:['The three basic patterns are loops, whorls and arches.','Loops make up about 60–65% of prints.','Whorls are about 30–35%; arches are rare, about 5%.']},
   {id:'unique',kind:'test',lvl:'bio',q:'Why can fingerprints identify a person?',
-    choices:['Ridge details differ between people and don’t change','They show a person’s DNA in the ridge patterns','Everyone in a family has the same prints','They change every year, so they show age'],correct:1,
+    choices:['They show a person’s DNA in the ridge patterns','Ridge details differ between people and don’t change','Everyone in a family has the same prints','They change every year, so they show age'],correct:1,
     steps:['Ridges form before birth and stay the same for life.','Their endings, splits and dots form a unique pattern.','Identical twins share DNA but not fingerprints.'],lab:{set:{mode:'compare'},look:'Compare the print with each suspect.'}}
 ]},
 lipprints:{questions:[
