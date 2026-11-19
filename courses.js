@@ -39,7 +39,9 @@ BioLab.COURSES = [
       { n: 'Step 5', t: 'Catching attackers', ids: ['logs', 'metadata', 'recovery'] },
       { n: 'Step 6', t: 'Put it all together', ids: ['casefile'] }
     ],
-    further: [] }
+    further: [],
+    furtherLinks: [{ href: 'https://rjedtech.github.io/Raider-AILab/#bugpatch', title: 'Why everything is breaking, in Raider AILab', label: 'Raider AILab',
+      text: 'From the November 2026 headlines: old code, open doors, rushed fixes, AI attacks at machine speed, and how defenders win. Start with Bugs, holes and patches.', kind: 'From the headlines' }] }
 ];
 
 BioLab.TOPIC_ORDER = {
