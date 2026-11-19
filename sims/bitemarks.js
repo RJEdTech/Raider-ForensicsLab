@@ -348,7 +348,7 @@ function drawCompare(sim,ctx,k){const C=fullCase(sim),i=sim.p.suspect,f=C.fit[i]
   txt(ctx,'Evidence in an apple, Suspect '+SUS[i]+'’s acetate on top',20,22,{s:13*k,w:700});sideTags(ctx,k);
   const ty=30,th=(360-3*8)/4;SUS.forEach((l,j)=>{const y=ty+j*(th+8),sel=j===i;ctx.fillStyle=PAL['card'];rr(ctx,PX,y,PW,th,10);ctx.fill();ctx.strokeStyle=sel?PAL['rj']:PAL['line'];ctx.lineWidth=sel?3:1;ctx.stroke();
     const ok=C.fit[j].n>=10,y1=y+20*Math.min(k,1.3);if(k>1.35){txt(ctx,l+': '+(ok?'not excluded':'excluded'),PX+12,y1,{s:13*k,w:700,c:ok?PAL['s3']:PAL['s1']});}
-    else{txt(ctx,'Suspect '+l,PX+12,y1,{s:14*k,w:700});txt(ctx,verdict(C,j),PX+PW-10,y1,{s:12*k,w:700,a:'right',c:ok?PAL['s3']:PAL['s1']});}
+    else{txt(ctx,'Suspect '+l,PX+12,y1,{s:14*k,w:700});txt(ctx,k>1.1&&verdict(C,j)==='Cannot be excluded'?'Not excluded':verdict(C,j),PX+PW-10,y1,{s:12*k,w:700,a:'right',c:ok?PAL['s3']:PAL['s1']});}
     txt(ctx,C.imp[j].icdU.toFixed(1)+' mm · '+C.fit[j].n+'/12',PX+12,y1+16*k,{s:12.5*k,c:PAL['cv-soft']});});
   legendRow(ctx,k>1.35?[[0,'lines up',PAL['s3']],[0,'does not',PAL['s1']]]:[[0,'lines up',PAL['s3']],[0,'does not',PAL['s1']],[0,'tracing','#1f4fd1']],PX+4,404,PX+PW,k);}
 
