@@ -13,6 +13,10 @@ fingerprints: {
   ],
   stops: 'Science can say how strong the evidence is and how often examiners get it wrong. Whether a person is guilty is a judgment made by people (a jury, a judge) weighing all of the evidence. A match puts someone’s finger on the glass. It does not say when, why, or what they meant to do.',
   church: 'The Church teaches that every person has a right to their good name: judging someone guilty without enough evidence is the sin of rash judgment (Catechism nos. 2477–2478). The Catechism quotes St. Ignatius of Loyola’s rule from the <i>Spiritual Exercises</i>: be readier to put a good interpretation on what someone says than to condemn it. A careful examiner and an honest jury serve the truth, and the truth serves the person.',
+  faith: { items: [
+    { who: 'Marcello Malpighi', when: 'professor at Bologna and physician to Pope Innocent XII, 1686', says: 'Studying skin under one of the first microscopes, he described the ridges, loops and spirals on fingertips, the patterns examiners still compare today.' },
+    { who: 'St. Ivo of Kermartin', when: 'priest and judge in Brittany, 1200s; patron saint of lawyers', says: 'Known as the “advocate of the poor,” he took the cases of people who could not pay and was famous for judging fairly, without favoring the powerful.' }
+  ] },
   views: [
     { who: 'Edmond Locard', when: 'French forensic scientist, 1920s', says: 'Every contact leaves a trace. Evidence read patiently can show what happened when no one else saw.' },
     { who: 'William Blackstone', when: 'English judge, 1769', says: 'Better that ten guilty people go free than that one innocent person suffer. The law should demand strong proof before it condemns.' },
